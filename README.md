@@ -1,0 +1,1 @@
+cpersist is a C++ library to save/load data across multiple sessions of the program.
