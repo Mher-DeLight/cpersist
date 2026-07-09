@@ -1,0 +1,138 @@
+# =========================
+# CMake build files
+# =========================
+
+# Build directories
+build/
+Build/
+cmake-build-*/
+
+# CMake generated files
+CMakeCache.txt
+CMakeFiles/
+CMakeScripts/
+CTestTestfile.cmake
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CMakeUserPresets.json
+
+# CMake GUI
+CMakeSettings.json
+
+
+# =========================
+# Compiled binaries / objects
+# =========================
+
+# Object files
+*.o
+*.obj
+
+# Libraries
+*.a
+*.lib
+*.so
+*.so.*
+*.dll
+*.dylib
+
+# Executables
+*.exe
+*.out
+*.app
+
+# Debug symbols
+*.dSYM/
+*.pdb
+
+
+# =========================
+# Compiler output
+# =========================
+
+# GCC / Clang
+*.gcda
+*.gcno
+*.gcov
+
+# Coverage reports
+coverage/
+*.gcov
+
+
+# =========================
+# IDEs and editors
+# =========================
+
+# VS Code
+.vscode/
+
+# CLion
+.idea/
+*.iml
+
+# Qt Creator
+*.pro.user
+*.qmake.stash
+
+# Vim
+*.swp
+*.swo
+*~
+
+# Emacs
+*~
+
+
+# =========================
+# OS files
+# =========================
+
+# Linux
+*~
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+
+# =========================
+# Logs and temporary files
+# =========================
+
+*.log
+*.tmp
+*.temp
+
+
+# =========================
+# Package managers
+# =========================
+
+# vcpkg
+/vcpkg_installed/
+
+# Conan
+.conan/
+conan.lock
+
+
+# =========================
+# Testing
+# =========================
+
+Testing/
+CTestTestfile.cmake
+*.xml
+
+
+# =========================
+# Local environment files
+# =========================
+
+.env
+.env.*
