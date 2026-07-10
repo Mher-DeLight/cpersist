@@ -1,12 +1,21 @@
 #pragma once
 #include <string>
-#include <unordered_set>
+#include <type_traits>
+#include <unordered_map>
+#include <sstream>
+#include <ostream>
 
+namespace cpersist {
+    template<typename T>
+    concept hasSerialize = requires(T t) {
+        t.hasSerialize();
+    };
+}
 
 class SaveManager {
 private:
     std::string current_file;
-    std::unordered_set<std::string> files;
+    std::unordered_map<std::string, std::stringstream> files;
 public:
     bool filename_fits_standards(const std::string& filename); // check if the filename fits the naming standards
     void make_filename_safe(std::string& filename);
@@ -15,8 +24,25 @@ public:
     void change_file_safe(const std::string& new_file);       // creates file if it doesn't exist, then moves to it in either case
     bool create_new_file(const std::string& new_file);        // creates a new file
 
+    // WRITING
+    template<typename T>
+    void write(const T& object, const bool& custom_serialize = false) {
+        if constexpr (cpersist::hasSerialize<T>) {
+            object.serialize(files[current_file]); // object contains a serialize function
+        } else {
+            files[current_file].write(reinterpret_cast<const char*>(&object), sizeof(object));
+        }
+    };
+    
+    void write(const std::string& str);
+
+    // COMMIT
+    void commit();
+
+
     void log_filenames();
     void log_current_filename();
+    
 
     std::string& get_current_file();
 };
