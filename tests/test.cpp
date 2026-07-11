@@ -1,28 +1,29 @@
 #include <cpersist.h>
 #include <iostream>
 #include <sstream>
+SaveManager sm;
 
 
 class myclass {
 public:
-    int number = 5;
+    int number = 2;
 
-    void serialize(std::stringstream& s) {
-        s << number;
+    void serialize(const std::string& parent) {
+        sm.write("number", number, parent);
+    }
+    void deserialize(const std::string& parent) {
+        number = sm.read<int>("number", parent);
     }
 };
 
-SaveManager sm;
 int main()
 {
     sm.change_file_safe("myfile");
-
-    // myclass obj;
-    sm.write("object_instance", 4);
-    sm.commit(); 
-    
-
-    
+    myclass obj;
+    obj = sm.read<myclass>("object_instance");
+    std::cout << obj.number << std::endl;
+    // sm.write("object_instance", obj);
+    // sm.commit(); 
 
     return 0;
 }

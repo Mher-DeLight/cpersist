@@ -45,16 +45,17 @@ public:
 
     // WRITING
     template<typename T>
-    void write(const char* name, const T& object) {
+    void write(const std::string& name, const T& object, const std::string& parent="") {
         if (current_file.empty()) {
             cpersist_internal::ErrorManager::get().throwError("Can't write data while no file is chosen.");
         }
-        
+        std::string full_name = parent.empty()? name : parent + "." + name;
         
         std::stringstream dataStream(std::ios::in | std::ios::out | std::ios::binary); // those flags are to allow input, output, and make reading in binary
 
         if constexpr (cpersist::hasSerialize<T>) { // we need a constexpr because otherwise we would have a compiler-time error
-            object.serialize(dataStream); // object contains a serialize function
+            object.serialize(full_name); // object contains a serialize function
+            return;
         } else {
             static_assert(std::is_trivially_copyable_v<T>,
                   "Type must be trivially copyable or implement serialize(). Types such as std::vector or std::map cannot be encoded as they contain \
@@ -73,37 +74,38 @@ public:
 
         
         if (std::filesystem::is_regular_file(std::string(current_file + fileExtension))) {
-            uint64_t dataPosition = getDataPosition(name);
+            uint64_t dataPosition = getDataPosition(full_name);
             if (dataPosition != -1) { // data exists. modify it.
                 writeBytesIntoFile(serializedData.data(), dataSize, dataPosition);
-                debugLog(std::to_string(dataPosition));
                 return; // already modified existing entry; don't append a new one
             }
         }
 
-        uint8_t nameSize = std::strlen(name);
+        uint8_t nameSize = std::strlen(full_name.data());
 
         std::stringstream& file = files[current_file];
         file.write(reinterpret_cast<const char*>(&nameSize), sizeof(nameSize)); // write name size first
-        file.write(name, nameSize);                                             // then the name
+        file.write(full_name.data(), nameSize);                                             // then the name
         file.write(reinterpret_cast<const char*>(&dataSize), sizeof(dataSize)); // then write the data size
         file.write(serializedData.data(), serializedData.size());               // then write the data
     };
-    uint64_t getDataPosition(const std::string& name, bool skipDataSize = false);
+    uint64_t getDataPosition(const std::string& full_name, bool skipDataSize = false);
     std::vector<uint8_t> readFileAsBinary(const std::string& filename);
     void writeBytesIntoFile(const char* bytes, const std::uint32_t size, const std::uint64_t position);
 
     // READING
     template<typename T>
-    T read(const char* name, std::optional<T> defaultValue = std::nullopt) {
+    T read(const std::string& name, const std::string& parent="", std::optional<T> defaultValue = std::nullopt) {
         if (current_file.empty()) {
             cpersist_internal::ErrorManager::get().throwError("Can't read data while no file is chosen.");
         }
-        uint64_t dataPosition = getDataPosition(name);
+        std::string full_name = parent.empty() ? name : parent + "." + name;
+
+        uint64_t dataPosition = getDataPosition(full_name);
         
         if (dataPosition == static_cast<uint64_t>(-1)) {
             if (defaultValue) {return *defaultValue;} // not found
-            cpersist_internal::ErrorManager::get().throwError("Entry \"" + std::string(name) +"\" not found.");
+            cpersist_internal::ErrorManager::get().throwError("Entry \"" + std::string(full_name) +"\" not found.");
         }
 
         std::ifstream file(std::string(current_file + fileExtension), std::ios::binary);
@@ -120,9 +122,9 @@ public:
 
         std::stringstream dataStream(buffer);
 
-        if constexpr (cpersist::hasSerialize<T>) {
+        if constexpr (cpersist::hasDeserialize<T>) {
             T object;
-            object.deserialize(dataStream);
+            object.deserialize(full_name);
             return object;
         } else {
             static_assert(std::is_trivially_copyable_v<T>,
