@@ -44,6 +44,72 @@ bool SaveManager::create_new_file(const std::string& new_file) {
     return true;
 }
 
+// WRITING / READING
+int SaveManager::getDataPosition(const std::string& name) {
+    std::vector<uint8_t> data = readFileAsBinary(current_file);
+    size_t position = 0;
+
+    while (position < data.size()) {
+        // first of all, we need to make sure there's enough room for nameSize
+        if (position + sizeof(uint64_t) > data.size()) {return -1;} // data is probably invalid, not found
+
+        // ===== NAMESIZE
+        uint64_t nameSize;
+        std::memcpy(&nameSize, data.data() + position, sizeof(nameSize)); // cool pointer stuff. moves data from the vector to nameSize
+        position += sizeof(nameSize); // move forward
+
+        // ===== NAME
+        // check bounds again
+        if (position + nameSize > data.size()) {return -1;}
+
+        std::string currentName(
+            reinterpret_cast<char*>(data.data() + position),
+            nameSize
+        );
+        position += nameSize;
+
+        // ===== DATASIZE
+        if (position + sizeof(uint64_t) > data.size()) {return -1;}
+
+        uint64_t dataSize;
+        std::memcpy(&dataSize, data.data() + position, sizeof(dataSize));
+        position += sizeof(dataSize);
+
+        // the position now points at the data itself. return it if there's a match
+        if (currentName == name) {
+            return static_cast<int>(position);            
+        }
+
+        // the end
+        if (position + dataSize > data.size()) {return -1;}
+
+        // move to the next
+        position += dataSize;
+    }
+
+    return -1;
+}
+std::vector<uint8_t> SaveManager::readFileAsBinary(const std::string& filename)
+{
+    std::ifstream file(filename + ".dat", std::ios::binary);
+
+    if (!file) {
+        cpersist_internal::ErrorManager::get().throwError("Failed to open file: " + filename + ".dat");
+    }
+
+    // Find the file's size
+    file.seekg(0, std::ios::end);
+    std::streamsize size = file.tellg();
+    file.seekg(0, std::ios::beg);
+
+    // then read it
+    std::vector<uint8_t> bytes(size);
+    if (!file.read(reinterpret_cast<char*>(bytes.data()), size)) {
+        cpersist_internal::ErrorManager::get().throwError("Cannot read data file " + filename + ".dat");
+    }
+
+    return bytes;
+}
 
 // COMMIT
 void SaveManager::commit() {

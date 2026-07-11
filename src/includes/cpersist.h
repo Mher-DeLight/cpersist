@@ -7,6 +7,7 @@
 #include "error_handler.h"
 #include <cstring>
 #include <cstdint>
+#include <vector>
 #include <iostream>
 
 namespace cpersist {
@@ -68,7 +69,8 @@ public:
         file.write(reinterpret_cast<const char*>(&dataSize), sizeof(dataSize)); // then write the data size
         file << dataStream.rdbuf();                                             // then write the data
     };
-    
+    int getDataPosition(const std::string& name);
+    std::vector<uint8_t> readFileAsBinary(const std::string& filename);
 
     // COMMIT
     void commit();

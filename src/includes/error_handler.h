@@ -9,7 +9,7 @@ namespace cpersist_internal {
             return instance;
         }
     
-        void throwError(const char* error_message);
+        void throwError(const std::string& error_message);
         void assert(const bool& condition, const char* error_message);
         void throwWarning(const char* warning_message);
 

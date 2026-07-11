@@ -1,7 +1,8 @@
 #include "error_handler.h"
 #include <iostream>
+#include <string>
 
-void cpersist_internal::ErrorManager::throwError(const char* error_message) {
+void cpersist_internal::ErrorManager::throwError(const std::string& error_message) {
     std::cerr << "[CPERSIST ERROR] " << error_message << std::endl;
     abort();
 }
