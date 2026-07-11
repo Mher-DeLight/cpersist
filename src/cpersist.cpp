@@ -45,9 +45,9 @@ bool SaveManager::create_new_file(const std::string& new_file) {
 }
 
 // WRITING / READING
-int SaveManager::getDataPosition(const std::string& name) {
+uint64_t SaveManager::getDataPosition(const std::string& name) {
     std::vector<uint8_t> data = readFileAsBinary(current_file);
-    size_t position = 0;
+    uint64_t position = 0;
 
     while (position < data.size()) {
         // first of all, we need to make sure there's enough room for nameSize
@@ -75,9 +75,9 @@ int SaveManager::getDataPosition(const std::string& name) {
         std::memcpy(&dataSize, data.data() + position, sizeof(dataSize));
         position += sizeof(dataSize);
 
-        // the position now points at the data itself. return it if there's a match
+        // the position now points at the data itself. move back to dataSize then return it if there's a match.
         if (currentName == name) {
-            return static_cast<int>(position);            
+            return static_cast<int>(position - sizeof(dataSize));            
         }
 
         // the end
@@ -109,6 +109,21 @@ std::vector<uint8_t> SaveManager::readFileAsBinary(const std::string& filename)
     }
 
     return bytes;
+}
+void SaveManager::writeBytesIntoFile(const char* bytes, const std::uint64_t size, const std::uint64_t position) {
+    std::fstream file(current_file + ".dat", std::ios::in | std::ios::out | std::ios::binary);
+
+    if (!file) {
+        cpersist_internal::ErrorManager::get().throwError("Failed to modify file: " + current_file + ".dat" + " at position " + std::to_string(position));
+    }
+    std::streamoff offset = position;
+    file.seekp(offset);
+    file.write(reinterpret_cast<const char*>(&size), sizeof(size));
+    file.write(bytes, size);
+
+    if (!file) {
+        cpersist_internal::ErrorManager::get().throwError("Failed to write to file " + current_file + ".dat");
+    }
 }
 
 // COMMIT

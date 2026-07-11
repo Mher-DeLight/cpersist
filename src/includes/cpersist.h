@@ -40,7 +40,8 @@ public:
         if (current_file.empty()) {
             cpersist_internal::ErrorManager::get().throwError("Can't write data while no file is chosen.");
         }
-
+        
+        
         std::stringstream dataStream(std::ios::in | std::ios::out | std::ios::binary); // those flags are to allow input, output, and make reading in binary
 
         if constexpr (cpersist::hasSerialize<T>) { // we need a constexpr because otherwise we would have a compiler-time error
@@ -57,9 +58,14 @@ public:
         if (dataStream.tellg() == std::streampos(-1)) {
             cpersist_internal::ErrorManager::get().throwError("Serialization failed.");
         }
-
+        
         std::uint64_t dataSize = dataStream.tellg();
         dataStream.seekg(0, std::ios::beg);
+
+        uint64_t dataPosition = getDataPosition(name);
+        if (dataPosition != -1) { // data exists. modify it.
+            writeBytesIntoFile(dataStream.str().data(), dataSize, dataPosition);
+        }
 
         std::uint64_t nameSize = std::strlen(name);
 
@@ -69,8 +75,9 @@ public:
         file.write(reinterpret_cast<const char*>(&dataSize), sizeof(dataSize)); // then write the data size
         file << dataStream.rdbuf();                                             // then write the data
     };
-    int getDataPosition(const std::string& name);
+    uint64_t getDataPosition(const std::string& name);
     std::vector<uint8_t> readFileAsBinary(const std::string& filename);
+    void writeBytesIntoFile(const char* bytes, const std::uint64_t size, const std::uint64_t position);
 
     // COMMIT
     void commit();
