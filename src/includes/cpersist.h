@@ -15,13 +15,13 @@
 
 namespace cpersist {
     template<typename T>
-    concept hasSerialize = requires(T t) {
-        t.serialize();
+    concept hasSerialize = requires(T& t, const std::string& parent) {
+        t.serialize(parent);
     };
 
     template<typename T>
-    concept hasDeserialize = requires(T t) {
-        t.deserialize();
+    concept hasDeserialize = requires(T& t, const std::string& parent) {
+        t.deserialize(parent);
     };
 }
 
@@ -45,7 +45,7 @@ public:
 
     // WRITING
     template<typename T>
-    void write(const std::string& name, const T& object, const std::string& parent="") {
+    void write(const std::string& name, T& object, const std::string& parent="") {
         if (current_file.empty()) {
             cpersist_internal::ErrorManager::get().throwError("Can't write data while no file is chosen.");
         }
@@ -101,6 +101,12 @@ public:
         }
         std::string full_name = parent.empty() ? name : parent + "." + name;
 
+        if constexpr (cpersist::hasDeserialize<T>) {
+            T object;
+            object.deserialize(full_name);
+            return object;
+        }
+
         uint64_t dataPosition = getDataPosition(full_name);
         
         if (dataPosition == static_cast<uint64_t>(-1)) {
@@ -122,11 +128,7 @@ public:
 
         std::stringstream dataStream(buffer);
 
-        if constexpr (cpersist::hasDeserialize<T>) {
-            T object;
-            object.deserialize(full_name);
-            return object;
-        } else {
+        if constexpr (!cpersist::hasDeserialize<T>) {
             static_assert(std::is_trivially_copyable_v<T>,
                 "Type must be trivially copyable or implement deserialize().");
 
@@ -140,9 +142,7 @@ public:
             return object;
         }
     }
-    bool file_contains_data(const std::string& dataname) {
-        return getDataPosition(dataname) != static_cast<uint64_t>(-1);
-    }
+    bool file_contains_data(const std::string& dataname);
 
     // COMMIT
     void commit();

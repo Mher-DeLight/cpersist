@@ -55,7 +55,7 @@ uint64_t SaveManager::getDataPosition(const std::string& name, bool skipDataSize
 
     while (position < data.size()) {
         // first of all, we need to make sure there's enough room for nameSize
-        if (position + sizeof(uint64_t) > data.size()) {return -1;} // data is probably invalid, not found
+        if (position + sizeof(uint8_t) > data.size()) {return -1;} // data is probably invalid, not found
 
         // ===== NAMESIZE
         uint8_t nameSize;
@@ -73,9 +73,9 @@ uint64_t SaveManager::getDataPosition(const std::string& name, bool skipDataSize
         position += nameSize;
 
         // ===== DATASIZE
-        if (position + sizeof(uint64_t) > data.size()) {return -1;}
+        if (position + sizeof(uint32_t) > data.size()) {return -1;}
 
-        uint16_t dataSize;
+        uint32_t dataSize;
         std::memcpy(&dataSize, data.data() + position, sizeof(dataSize));
         position += sizeof(dataSize);
 
@@ -128,6 +128,55 @@ void SaveManager::writeBytesIntoFile(const char* bytes, const std::uint32_t size
     if (!file) {
         cpersist_internal::ErrorManager::get().throwError("Failed to write to file " + current_file + fileExtension);
     }
+}
+bool SaveManager::file_contains_data(const std::string& dataname) {
+    std::vector<uint8_t> data;
+    try {
+        data = readFileAsBinary(current_file);
+    } catch (std::exception& e) {
+        return false;    
+    }
+    uint64_t position = 0;
+
+    while (position < data.size()) {
+        // first of all, we need to make sure there's enough room for nameSize
+        if (position + sizeof(uint8_t) > data.size()) {return false;} // data is probably invalid, not found
+
+        // ===== NAMESIZE
+        uint8_t nameSize;
+        std::memcpy(&nameSize, data.data() + position, sizeof(nameSize)); // cool pointer stuff. moves data from the vector to nameSize
+        position += sizeof(nameSize); // move forward
+
+        // ===== NAME
+        // check bounds again
+        if (position + nameSize > data.size()) {return false;}
+
+        std::string currentName(
+            reinterpret_cast<char*>(data.data() + position),
+            nameSize
+        );
+        position += nameSize;
+
+        // ===== DATASIZE
+        if (position + sizeof(uint32_t) > data.size()) {return false;}
+
+        uint32_t dataSize;
+        std::memcpy(&dataSize, data.data() + position, sizeof(dataSize));
+        position += sizeof(dataSize);
+
+        // the position now points at the data itself. move back to dataSize then return it if there's a match.
+        if (currentName == dataname || currentName.starts_with(dataname + ".")) {
+            return true;
+        }
+
+        // the end
+        if (position + dataSize > data.size()) {return false;}
+
+        // move to the next
+        position += dataSize;
+    }
+
+    return false;
 }
 
 // COMMIT
