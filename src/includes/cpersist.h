@@ -27,10 +27,13 @@ public:
     // WRITING
     template<typename T>
     void write(const T& object, const bool& custom_serialize = false) {
-        if constexpr (cpersist::hasSerialize<T>) {
+        if constexpr (cpersist::hasSerialize<T>) { // we need a constexpr because otherwise we would have a compiler-time error
             object.serialize(files[current_file]); // object contains a serialize function
         } else {
-            files[current_file].write(reinterpret_cast<const char*>(&object), sizeof(object));
+            static_assert(std::is_trivially_copyable_v<T>,
+                  "Type must be trivially copyable or implement serialize(). Types such as std::vector or std::map cannot be encoded as they contain \
+                  pointers and dynamically allocated memory.");
+            files[current_file].write(reinterpret_cast<const char*>(&object), sizeof(object)); // reinterpreting as char* turns it into raw bytes
         }
     };
     
