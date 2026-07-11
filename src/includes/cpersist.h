@@ -4,17 +4,24 @@
 #include <unordered_map>
 #include <sstream>
 #include <ostream>
-#include "error_handler.h"
 #include <cstring>
 #include <cstdint>
 #include <vector>
 #include <iostream>
 #include <filesystem>
+#include <optional>
+#include <fstream>
+#include "error_handler.h"
 
 namespace cpersist {
     template<typename T>
     concept hasSerialize = requires(T t) {
         t.serialize();
+    };
+
+    template<typename T>
+    concept hasDeserialize = requires(T t) {
+        t.deserialize();
     };
 }
 
@@ -69,6 +76,7 @@ public:
             uint64_t dataPosition = getDataPosition(name);
             if (dataPosition != -1) { // data exists. modify it.
                 writeBytesIntoFile(serializedData.data(), dataSize, dataPosition);
+                debugLog(std::to_string(dataPosition));
                 return; // already modified existing entry; don't append a new one
             }
         }
@@ -81,9 +89,55 @@ public:
         file.write(reinterpret_cast<const char*>(&dataSize), sizeof(dataSize)); // then write the data size
         file.write(serializedData.data(), serializedData.size());               // then write the data
     };
-    uint64_t getDataPosition(const std::string& name);
+    uint64_t getDataPosition(const std::string& name, bool skipDataSize = false);
     std::vector<uint8_t> readFileAsBinary(const std::string& filename);
-    void writeBytesIntoFile(const char* bytes, const std::uint64_t size, const std::uint64_t position);
+    void writeBytesIntoFile(const char* bytes, const std::uint32_t size, const std::uint64_t position);
+
+    // READING
+    template<typename T>
+    T read(const char* name, std::optional<T> defaultValue = std::nullopt) {
+        if (current_file.empty()) {
+            cpersist_internal::ErrorManager::get().throwError("Can't read data while no file is chosen.");
+        }
+        uint64_t dataPosition = getDataPosition(name);
+        
+        if (dataPosition == static_cast<uint64_t>(-1)) {
+            if (defaultValue) {return *defaultValue;} // not found
+            cpersist_internal::ErrorManager::get().throwError("Entry \"" + std::string(name) +"\" not found.");
+        }
+
+        std::ifstream file(std::string(current_file + fileExtension), std::ios::binary);
+        if (!file) {
+            cpersist_internal::ErrorManager::get().throwError("Can't read file " + current_file + fileExtension + "; it might be deleted or corrupted");
+        }
+
+        file.seekg(dataPosition);
+        uint32_t dataSize;
+        file.read(reinterpret_cast<char*>(&dataSize), sizeof(dataSize)); // read data size
+
+        std::string buffer(dataSize, '\0'); // make a string of dataSize many characters, each of which is initially 00
+        file.read(buffer.data(), dataSize);
+
+        std::stringstream dataStream(buffer);
+
+        if constexpr (cpersist::hasSerialize<T>) {
+            T object;
+            object.deserialize(dataStream);
+            return object;
+        } else {
+            static_assert(std::is_trivially_copyable_v<T>,
+                "Type must be trivially copyable or implement deserialize().");
+
+            if (dataSize != sizeof(T)) {
+                cpersist_internal::ErrorManager::get().throwError(
+                    "Stored object has incorrect size.");
+            }
+
+            T object;
+            std::memcpy(&object, buffer.data(), sizeof(T));
+            return object;
+        }
+    }
 
     // COMMIT
     void commit();

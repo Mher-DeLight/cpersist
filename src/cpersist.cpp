@@ -1,7 +1,6 @@
 #include <iostream>
 #include "includes/cpersist.h"
 #include <algorithm>
-#include <fstream>
 
 
 // CHECKERS
@@ -45,7 +44,7 @@ bool SaveManager::create_new_file(const std::string& new_file) {
 }
 
 // WRITING / READING
-uint64_t SaveManager::getDataPosition(const std::string& name) {
+uint64_t SaveManager::getDataPosition(const std::string& name, bool skipDataSize) {
     std::vector<uint8_t> data = readFileAsBinary(current_file);
     uint64_t position = 0;
 
@@ -77,7 +76,7 @@ uint64_t SaveManager::getDataPosition(const std::string& name) {
 
         // the position now points at the data itself. move back to dataSize then return it if there's a match.
         if (currentName == name) {
-            return static_cast<int>(position - sizeof(dataSize));            
+            return static_cast<int>(position - sizeof(dataSize));
         }
 
         // the end
@@ -110,7 +109,7 @@ std::vector<uint8_t> SaveManager::readFileAsBinary(const std::string& filename)
 
     return bytes;
 }
-void SaveManager::writeBytesIntoFile(const char* bytes, const std::uint64_t size, const std::uint64_t position) {
+void SaveManager::writeBytesIntoFile(const char* bytes, const std::uint32_t size, const std::uint64_t position) {
     std::fstream file(current_file + fileExtension, std::ios::in | std::ios::out | std::ios::binary);
 
     if (!file) {

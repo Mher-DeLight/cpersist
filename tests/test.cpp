@@ -1,13 +1,28 @@
 #include <cpersist.h>
 #include <iostream>
+#include <sstream>
 
+
+class myclass {
+public:
+    int number = 5;
+
+    void serialize(std::stringstream& s) {
+        s << number;
+    }
+};
+
+SaveManager sm;
 int main()
 {
-    SaveManager sm;
     sm.change_file_safe("myfile");
-    sm.write("magic_number", 6);
-    sm.write("the_letter_h", "h");
-    sm.commit();
+
+    // myclass obj;
+    sm.write("object_instance", 4);
+    sm.commit(); 
+    
+
+    
 
     return 0;
 }
