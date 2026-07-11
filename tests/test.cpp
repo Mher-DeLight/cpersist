@@ -3,8 +3,11 @@
 
 int main()
 {
-    cpersist_internal::ErrorManager::get().throwWarning("you have been warned.");
-    cpersist_internal::ErrorManager::get().assert(false, "it's true.");
+    SaveManager sm;
+    sm.change_file_safe("myfile");
+    int number = 3;
+    sm.write("magic_number", number);
+    sm.commit();
 
     return 0;
 }

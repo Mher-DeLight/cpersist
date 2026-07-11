@@ -6,6 +6,8 @@
 #include <ostream>
 #include "error_handler.h"
 #include <cstring>
+#include <cstdint>
+#include <iostream>
 
 namespace cpersist {
     template<typename T>
@@ -18,13 +20,18 @@ class SaveManager {
 private:
     std::string current_file;
     std::unordered_map<std::string, std::stringstream> files;
+    bool debugMode = true;
+    void debugLog(const std::string& message) {
+        if (!debugMode) {return;}
+        std::cout << "[CPERSIST LOG] " << message << std::endl;
+    }
 public:
     bool filename_fits_standards(const std::string& filename); // check if the filename fits the naming standards
     void make_filename_safe(std::string& filename);
 
-    bool change_file(const std::string& new_file);            // changes the current file
-    void change_file_safe(const std::string& new_file);       // creates file if it doesn't exist, then moves to it in either case
-    bool create_new_file(const std::string& new_file);        // creates a new file
+    bool change_file(const std::string& new_file);             // changes the current file
+    void change_file_safe(const std::string& new_file);        // creates file if it doesn't exist, then moves to it in either case
+    bool create_new_file(const std::string& new_file);         // creates a new file
 
     // WRITING
     template<typename T>
@@ -41,11 +48,12 @@ public:
             static_assert(std::is_trivially_copyable_v<T>,
                   "Type must be trivially copyable or implement serialize(). Types such as std::vector or std::map cannot be encoded as they contain \
                   pointers and dynamically allocated memory.");
-            dataStream.write(reinterpret_cast<const char*>(&object), sizeof(object)); // reinterpreting as char* turns it into raw bytes
+                  const char* data = reinterpret_cast<const char*>(&object);
+                  dataStream.write(data, sizeof(data)); // reinterpreting as char* turns it into raw bytes
         }
 
         dataStream.seekg(0, std::ios::end);
-        if (pos == std::streampos(-1)) {
+        if (dataStream.tellg() == std::streampos(-1)) {
             cpersist_internal::ErrorManager::get().throwError("Serialization failed.");
         }
 
@@ -61,11 +69,9 @@ public:
         file << dataStream.rdbuf();                                             // then write the data
     };
     
-    void write(const std::string& str);
 
     // COMMIT
     void commit();
-
 
     void log_filenames();
     void log_current_filename();
