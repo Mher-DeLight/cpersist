@@ -5,11 +5,12 @@
 #include <sstream>
 #include <ostream>
 #include "error_handler.h"
+#include <cstring>
 
 namespace cpersist {
     template<typename T>
     concept hasSerialize = requires(T t) {
-        t.hasSerialize();
+        t.serialize();
     };
 }
 
@@ -27,19 +28,37 @@ public:
 
     // WRITING
     template<typename T>
-    void write(const T& object, const bool& custom_serialize = false) {
+    void write(const char* name, const T& object) {
         if (current_file.empty()) {
             cpersist_internal::ErrorManager::get().throwError("Can't write data while no file is chosen.");
         }
 
+        std::stringstream dataStream(std::ios::in | std::ios::out | std::ios::binary); // those flags are to allow input, output, and make reading in binary
+
         if constexpr (cpersist::hasSerialize<T>) { // we need a constexpr because otherwise we would have a compiler-time error
-            object.serialize(files[current_file]); // object contains a serialize function
+            object.serialize(dataStream); // object contains a serialize function
         } else {
             static_assert(std::is_trivially_copyable_v<T>,
                   "Type must be trivially copyable or implement serialize(). Types such as std::vector or std::map cannot be encoded as they contain \
                   pointers and dynamically allocated memory.");
-            files[current_file].write(reinterpret_cast<const char*>(&object), sizeof(object)); // reinterpreting as char* turns it into raw bytes
+            dataStream.write(reinterpret_cast<const char*>(&object), sizeof(object)); // reinterpreting as char* turns it into raw bytes
         }
+
+        dataStream.seekg(0, std::ios::end);
+        if (pos == std::streampos(-1)) {
+            cpersist_internal::ErrorManager::get().throwError("Serialization failed.");
+        }
+
+        std::uint64_t dataSize = dataStream.tellg();
+        dataStream.seekg(0, std::ios::beg);
+
+        std::uint64_t nameSize = std::strlen(name);
+
+        std::stringstream& file = files[current_file];
+        file.write(reinterpret_cast<const char*>(&nameSize), sizeof(nameSize)); // write name size first
+        file.write(name, nameSize);                                             // then the name
+        file.write(reinterpret_cast<const char*>(&dataSize), sizeof(dataSize)); // then write the data size
+        file << dataStream.rdbuf();                                             // then write the data
     };
     
     void write(const std::string& str);
