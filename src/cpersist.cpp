@@ -47,6 +47,9 @@ bool SaveManager::create_new_file(const std::string& new_file) {
 
 // COMMIT
 void SaveManager::commit() {
+    if (current_file.empty()) {
+        cpersist_internal::ErrorManager::get().throwError("Can't commit changes while no file is open.");
+    }
     std::ofstream file(current_file + ".dat", std::ios::app); // write into <current_file>.dat, append if already exists
     if (file.is_open()) {
         file << files[current_file].rdbuf();

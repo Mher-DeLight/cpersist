@@ -3,11 +3,8 @@
 
 int main()
 {
-    SaveManager sm;
-    sm.create_new_file("hello_world");
-    sm.change_file("hello_world");
-    sm.write(3);
-    sm.commit();
+    cpersist_internal::ErrorManager::get().throwWarning("you have been warned.");
+    cpersist_internal::ErrorManager::get().assert(false, "it's true.");
 
     return 0;
 }

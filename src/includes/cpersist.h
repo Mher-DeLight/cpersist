@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <sstream>
 #include <ostream>
+#include "error_handler.h"
 
 namespace cpersist {
     template<typename T>
@@ -27,6 +28,10 @@ public:
     // WRITING
     template<typename T>
     void write(const T& object, const bool& custom_serialize = false) {
+        if (current_file.empty()) {
+            cpersist_internal::ErrorManager::get().throwError("Can't write data while no file is chosen.");
+        }
+
         if constexpr (cpersist::hasSerialize<T>) { // we need a constexpr because otherwise we would have a compiler-time error
             object.serialize(files[current_file]); // object contains a serialize function
         } else {
