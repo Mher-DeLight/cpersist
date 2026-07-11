@@ -5,14 +5,15 @@
 int main()
 {
     SaveManager sm;
-    int high_score = 3;
-    sm.create_new_file("scores");
-    sm.change_file("scores");
-    if (!sm.file_contains_data("highscore")) {
-        sm.write("highscore", high_score); // save if not saved already
+    
+    sm.create_new_file("a");
+    sm.change_file("a");
+    if (!sm.file_contains_data("z")) {
+        std::string x = "look at me still talking when there's science to do";
+        sm.write("z", x);
         sm.commit();
     } else {
-        high_score = sm.read<int>("highscore");
+        std::cout << sm.read<std::string>("z") << std::endl;
     }
 
     return 0;

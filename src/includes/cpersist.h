@@ -12,6 +12,7 @@
 #include <optional>
 #include <fstream>
 #include "error_handler.h"
+#include "serializer.h"
 
 namespace cpersist {
     template<typename T>
@@ -57,11 +58,7 @@ public:
             object.serialize(full_name); // object contains a serialize function
             return;
         } else {
-            static_assert(std::is_trivially_copyable_v<T>,
-                  "Type must be trivially copyable or implement serialize(). Types such as std::vector or std::map cannot be encoded as they contain \
-                  pointers and dynamically allocated memory.");
-                  const char* data = reinterpret_cast<const char*>(&object);
-                  dataStream.write(data, sizeof(object)); // reinterpreting as char* turns it into raw bytes
+            cpersist::Serializer<T>::write(dataStream, object);
         }
 
         dataStream.seekg(0, std::ios::end);
@@ -128,19 +125,9 @@ public:
 
         std::stringstream dataStream(buffer);
 
-        if constexpr (!cpersist::hasDeserialize<T>) {
-            static_assert(std::is_trivially_copyable_v<T>,
-                "Type must be trivially copyable or implement deserialize().");
-
-            if (dataSize != sizeof(T)) {
-                cpersist_internal::ErrorManager::get().throwError(
-                    "Stored object has incorrect size.");
-            }
-
-            T object;
-            std::memcpy(&object, buffer.data(), sizeof(T));
-            return object;
-        }
+        T object;
+        cpersist::Serializer<T>::read(dataStream, object);
+        return object;
     }
     bool file_contains_data(const std::string& dataname);
 
