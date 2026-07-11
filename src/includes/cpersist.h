@@ -140,6 +140,9 @@ public:
             return object;
         }
     }
+    bool file_contains_data(const std::string& dataname) {
+        return getDataPosition(dataname) != static_cast<uint64_t>(-1);
+    }
 
     // COMMIT
     void commit();

@@ -20,10 +20,14 @@ int main()
 {
     sm.change_file_safe("myfile");
     myclass obj;
-    obj = sm.read<myclass>("object_instance");
-    std::cout << obj.number << std::endl;
-    // sm.write("object_instance", obj);
-    // sm.commit(); 
+    
+    if (!sm.file_contains_data("object_instance")) {
+        sm.write("object_instance", obj);
+        sm.commit(); 
+    } else {
+        obj = sm.read<myclass>("object_instance");
+        std::cout << obj.number << std::endl;
+    }
 
     return 0;
 }

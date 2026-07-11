@@ -45,7 +45,12 @@ bool SaveManager::create_new_file(const std::string& new_file) {
 
 // WRITING / READING
 uint64_t SaveManager::getDataPosition(const std::string& name, bool skipDataSize) {
-    std::vector<uint8_t> data = readFileAsBinary(current_file);
+    std::vector<uint8_t> data;
+    try {
+        data = readFileAsBinary(current_file);
+    } catch (std::exception& e) {
+        return -1;    
+    }
     uint64_t position = 0;
 
     while (position < data.size()) {
