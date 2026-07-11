@@ -91,10 +91,10 @@ uint64_t SaveManager::getDataPosition(const std::string& name) {
 }
 std::vector<uint8_t> SaveManager::readFileAsBinary(const std::string& filename)
 {
-    std::ifstream file(filename + ".dat", std::ios::binary);
+    std::ifstream file(filename + fileExtension, std::ios::binary);
 
     if (!file) {
-        cpersist_internal::ErrorManager::get().throwError("Failed to open file: " + filename + ".dat");
+        cpersist_internal::ErrorManager::get().throwError("Failed to open file: " + filename + fileExtension);
     }
 
     // Find the file's size
@@ -105,24 +105,24 @@ std::vector<uint8_t> SaveManager::readFileAsBinary(const std::string& filename)
     // then read it
     std::vector<uint8_t> bytes(size);
     if (!file.read(reinterpret_cast<char*>(bytes.data()), size)) {
-        cpersist_internal::ErrorManager::get().throwError("Cannot read data file " + filename + ".dat");
+        cpersist_internal::ErrorManager::get().throwError("Cannot read data file " + filename + fileExtension);
     }
 
     return bytes;
 }
 void SaveManager::writeBytesIntoFile(const char* bytes, const std::uint64_t size, const std::uint64_t position) {
-    std::fstream file(current_file + ".dat", std::ios::in | std::ios::out | std::ios::binary);
+    std::fstream file(current_file + fileExtension, std::ios::in | std::ios::out | std::ios::binary);
 
     if (!file) {
-        cpersist_internal::ErrorManager::get().throwError("Failed to modify file: " + current_file + ".dat" + " at position " + std::to_string(position));
+        cpersist_internal::ErrorManager::get().throwError("Failed to modify file: " + current_file + fileExtension + " at position " + std::to_string(position));
     }
-    std::streamoff offset = position;
+    std::streamoff offset(position);
     file.seekp(offset);
     file.write(reinterpret_cast<const char*>(&size), sizeof(size));
     file.write(bytes, size);
 
     if (!file) {
-        cpersist_internal::ErrorManager::get().throwError("Failed to write to file " + current_file + ".dat");
+        cpersist_internal::ErrorManager::get().throwError("Failed to write to file " + current_file + fileExtension);
     }
 }
 
@@ -131,7 +131,7 @@ void SaveManager::commit() {
     if (current_file.empty()) {
         cpersist_internal::ErrorManager::get().throwError("Can't commit changes while no file is open.");
     }
-    std::ofstream file(current_file + ".dat", std::ios::app); // write into <current_file>.dat, append if already exists
+    std::ofstream file(current_file + fileExtension, std::ios::app); // write into <current_file>.dat, append if already exists
     if (file.is_open()) {
         file << files[current_file].rdbuf();
     }
@@ -149,6 +149,14 @@ void SaveManager::log_current_filename() {
 }
 
 // GETTERS
-std::string& SaveManager::get_current_file() {
+const std::string& SaveManager::get_current_file() {
     return current_file;
+}
+const std::string& SaveManager::get_file_extension() {
+    return fileExtension;
+}
+
+// SETTERS
+void SaveManager::set_file_extension(const std::string& new_extension) {
+    fileExtension = "." + new_extension;
 }

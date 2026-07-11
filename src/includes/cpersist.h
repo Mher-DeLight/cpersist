@@ -26,6 +26,7 @@ private:
         if (!debugMode) {return;}
         std::cout << "[CPERSIST LOG] " << message << std::endl;
     }
+    std::string fileExtension = ".bin";
 public:
     bool filename_fits_standards(const std::string& filename); // check if the filename fits the naming standards
     void make_filename_safe(std::string& filename);
@@ -51,29 +52,30 @@ public:
                   "Type must be trivially copyable or implement serialize(). Types such as std::vector or std::map cannot be encoded as they contain \
                   pointers and dynamically allocated memory.");
                   const char* data = reinterpret_cast<const char*>(&object);
-                  dataStream.write(data, sizeof(data)); // reinterpreting as char* turns it into raw bytes
+                  dataStream.write(data, sizeof(object)); // reinterpreting as char* turns it into raw bytes
         }
 
         dataStream.seekg(0, std::ios::end);
         if (dataStream.tellg() == std::streampos(-1)) {
             cpersist_internal::ErrorManager::get().throwError("Serialization failed.");
         }
-        
-        std::uint64_t dataSize = dataStream.tellg();
-        dataStream.seekg(0, std::ios::beg);
+
+        std::string serializedData = dataStream.str();
+        uint64_t dataSize = serializedData.size();
 
         uint64_t dataPosition = getDataPosition(name);
         if (dataPosition != -1) { // data exists. modify it.
-            writeBytesIntoFile(dataStream.str().data(), dataSize, dataPosition);
+            writeBytesIntoFile(serializedData.data(), dataSize, dataPosition);
+            return; // already modified existing entry; don't append a new one
         }
 
-        std::uint64_t nameSize = std::strlen(name);
+        uint64_t nameSize = std::strlen(name);
 
         std::stringstream& file = files[current_file];
         file.write(reinterpret_cast<const char*>(&nameSize), sizeof(nameSize)); // write name size first
         file.write(name, nameSize);                                             // then the name
         file.write(reinterpret_cast<const char*>(&dataSize), sizeof(dataSize)); // then write the data size
-        file << dataStream.rdbuf();                                             // then write the data
+        file.write(serializedData.data(), serializedData.size());               // then write the data
     };
     uint64_t getDataPosition(const std::string& name);
     std::vector<uint8_t> readFileAsBinary(const std::string& filename);
@@ -82,9 +84,14 @@ public:
     // COMMIT
     void commit();
 
+    // LOGGERS
     void log_filenames();
     void log_current_filename();
     
+    // GETTERS
+    const std::string& get_current_file();
+    const std::string& get_file_extension();
 
-    std::string& get_current_file();
+    // SETTERS
+    void set_file_extension(const std::string& new_extension);
 };
