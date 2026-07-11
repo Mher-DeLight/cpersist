@@ -4,7 +4,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-add_library(cpersist src/includes/cpersist.h src/cpersist.cpp)
+add_library(cpersist src/includes/cpersist.h src/cpersist.cpp src/includes/error_handler.h src/error_handler.cpp)
 
 include(CTest)
 enable_testing()
