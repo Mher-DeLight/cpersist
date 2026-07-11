@@ -54,7 +54,7 @@ uint64_t SaveManager::getDataPosition(const std::string& name) {
         if (position + sizeof(uint64_t) > data.size()) {return -1;} // data is probably invalid, not found
 
         // ===== NAMESIZE
-        uint64_t nameSize;
+        uint8_t nameSize;
         std::memcpy(&nameSize, data.data() + position, sizeof(nameSize)); // cool pointer stuff. moves data from the vector to nameSize
         position += sizeof(nameSize); // move forward
 
@@ -71,7 +71,7 @@ uint64_t SaveManager::getDataPosition(const std::string& name) {
         // ===== DATASIZE
         if (position + sizeof(uint64_t) > data.size()) {return -1;}
 
-        uint64_t dataSize;
+        uint16_t dataSize;
         std::memcpy(&dataSize, data.data() + position, sizeof(dataSize));
         position += sizeof(dataSize);
 

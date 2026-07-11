@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <vector>
 #include <iostream>
+#include <filesystem>
 
 namespace cpersist {
     template<typename T>
@@ -61,15 +62,18 @@ public:
         }
 
         std::string serializedData = dataStream.str();
-        uint64_t dataSize = serializedData.size();
+        uint32_t dataSize = serializedData.size();
 
-        uint64_t dataPosition = getDataPosition(name);
-        if (dataPosition != -1) { // data exists. modify it.
-            writeBytesIntoFile(serializedData.data(), dataSize, dataPosition);
-            return; // already modified existing entry; don't append a new one
+        
+        if (std::filesystem::is_regular_file(std::string(current_file + fileExtension))) {
+            uint64_t dataPosition = getDataPosition(name);
+            if (dataPosition != -1) { // data exists. modify it.
+                writeBytesIntoFile(serializedData.data(), dataSize, dataPosition);
+                return; // already modified existing entry; don't append a new one
+            }
         }
 
-        uint64_t nameSize = std::strlen(name);
+        uint8_t nameSize = std::strlen(name);
 
         std::stringstream& file = files[current_file];
         file.write(reinterpret_cast<const char*>(&nameSize), sizeof(nameSize)); // write name size first

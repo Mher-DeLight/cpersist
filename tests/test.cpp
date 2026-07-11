@@ -5,10 +5,9 @@ int main()
 {
     SaveManager sm;
     sm.change_file_safe("myfile");
-    int number = 1;
-    sm.write("magic_number", number);
+    sm.write("magic_number", 6);
+    sm.write("the_letter_h", "h");
     sm.commit();
-
 
     return 0;
 }
