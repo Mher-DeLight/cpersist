@@ -72,33 +72,23 @@ bool SaveManager::create_new_file(const std::string& new_file) {
 }
 
 // WRITING / READING
-uint64_t SaveManager::getDataPosition(const std::string& name, bool skipDataSize) {
+uint64_t SaveManager::getDataPosition(const uint64_t& namehash) {
     std::vector<uint8_t> data;
     try {
         data = readFileAsBinary(current_file);
     } catch (std::exception& e) {
-        return -1;    
+        return -1; 
     }
     uint64_t position = 0;
 
     while (position < data.size()) {
-        // first of all, we need to make sure there's enough room for nameSize
-        if (position + sizeof(uint8_t) > data.size()) {return -1;} // data is probably invalid, not found
-
-        // ===== NAMESIZE
-        uint8_t nameSize;
-        std::memcpy(&nameSize, data.data() + position, sizeof(nameSize)); // cool pointer stuff. moves data from the vector to nameSize
-        position += sizeof(nameSize); // move forward
-
         // ===== NAME
-        // check bounds again
-        if (position + nameSize > data.size()) {return -1;}
+        // check bounds
+        if (position + sizeof(uint64_t) > data.size()) {return -1;}
 
-        std::string currentName(
-            reinterpret_cast<char*>(data.data() + position),
-            nameSize
-        );
-        position += nameSize;
+        uint64_t currentName;
+        std::memcpy(&currentName, data.data() + position, sizeof(currentName));
+        position += sizeof(uint64_t);
 
         // ===== DATASIZE
         if (position + sizeof(uint32_t) > data.size()) {return -1;}
@@ -108,8 +98,8 @@ uint64_t SaveManager::getDataPosition(const std::string& name, bool skipDataSize
         position += sizeof(dataSize);
 
         // the position now points at the data itself. move back to dataSize then return it if there's a match.
-        if (currentName == name) {
-            return static_cast<int>(position - sizeof(dataSize));
+        if (currentName == namehash) {
+            return static_cast<uint64_t>(position - sizeof(dataSize));
         }
 
         // the end
@@ -242,7 +232,7 @@ void SaveManager::set_file_extension(const std::string& new_extension) {
     fileExtension = "." + new_extension;
 }
 
-std::string cpersist_internal::hashString(const std::string& s)  {
+uint64_t cpersist_internal::hashString(const std::string& s)  {
     uint64_t hash = 14695981039346656037ull;
 
     for (unsigned char c : s) {
@@ -250,5 +240,5 @@ std::string cpersist_internal::hashString(const std::string& s)  {
         hash *= 1099511628211ull;
     }
 
-    return std::to_string(hash);
+    return hash;
 }

@@ -27,7 +27,7 @@ namespace cpersist {
     };
 }
 namespace cpersist_internal {
-    std::string hashString(const std::string& s);
+    uint64_t hashString(const std::string& s);
 }
 
 class SaveManager {
@@ -60,12 +60,12 @@ public:
         if (current_file.empty()) {
             cpersist_internal::ErrorManager::get().throwError("Can't write data while no file is chosen.");
         }
-        std::string full_name = cpersist_internal::hashString(parent.empty()? name : parent + "." + name);
+        uint64_t namehash = cpersist_internal::hashString(parent.empty()? name : parent + "." + name);
         
         std::stringstream dataStream(std::ios::in | std::ios::out | std::ios::binary); // those flags are to allow input, output, and make reading in binary
 
         if constexpr (cpersist::hasSerialize<T>) { // we need a constexpr because otherwise we would have a compiler-time error
-            object.serialize(full_name); // object contains a serialize function
+            object.serialize(namehash); // object contains a serialize function
             return;
         } else {
             cpersist::Serializer<T>::write(dataStream, object);
@@ -81,22 +81,19 @@ public:
 
         
         if (file_exists(current_file)) {
-            uint64_t dataPosition = getDataPosition(full_name);
+            uint64_t dataPosition = getDataPosition(namehash);
             if (dataPosition != -1) { // data exists. modify it.
                 writeBytesIntoFile(serializedData.data(), dataSize, dataPosition);
                 return; // already modified existing entry; don't append a new one
             }
         }
 
-        uint8_t nameSize = std::strlen(full_name.data());
-
         std::stringstream& file = files[current_file];
-        file.write(reinterpret_cast<const char*>(&nameSize), sizeof(nameSize)); // write name size first
-        file.write(full_name.data(), nameSize);                                             // then the name
+        file.write(reinterpret_cast<const char*>(&namehash), sizeof(uint64_t));  // write the name hash, always 8 bytes thanks to hashing
         file.write(reinterpret_cast<const char*>(&dataSize), sizeof(dataSize)); // then write the data size
         file.write(serializedData.data(), serializedData.size());               // then write the data
     };
-    uint64_t getDataPosition(const std::string& full_name, bool skipDataSize = false);
+    uint64_t getDataPosition(const uint64_t& namehash);
     std::vector<uint8_t> readFileAsBinary(const std::string& filename);
     void writeBytesIntoFile(const char* bytes, const std::uint32_t size, const std::uint64_t position);
 
@@ -106,19 +103,19 @@ public:
         if (current_file.empty()) {
             cpersist_internal::ErrorManager::get().throwError("Can't read data while no file is chosen.");
         }
-        std::string full_name = cpersist_internal::hashString(parent.empty() ? name : parent + "." + name);
+        uint64_t namehash = cpersist_internal::hashString(parent.empty() ? name : parent + "." + name);
 
         if constexpr (cpersist::hasDeserialize<T>) {
             T object;
-            object.deserialize(full_name);
+            object.deserialize(namehash);
             return object;
         }
 
-        uint64_t dataPosition = getDataPosition(full_name);
+        uint64_t dataPosition = getDataPosition(namehash);
         
         if (dataPosition == static_cast<uint64_t>(-1)) {
             if (defaultValue) {return *defaultValue;} // not found
-            cpersist_internal::ErrorManager::get().throwError("Entry \"" + std::string(full_name) +"\" not found.");
+            cpersist_internal::ErrorManager::get().throwError("Entry \"" + std::string(parent.empty()? name : parent + "." + name) +"\" not found.");
         }
 
         std::ifstream file(std::filesystem::path(folderName) / (current_file + fileExtension), std::ios::binary);
