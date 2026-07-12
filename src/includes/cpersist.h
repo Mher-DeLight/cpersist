@@ -77,7 +77,7 @@ public:
         uint32_t dataSize = serializedData.size();
 
         
-        if (std::filesystem::is_regular_file(std::string(current_file + fileExtension))) {
+        if (file_exists(current_file)) {
             uint64_t dataPosition = getDataPosition(full_name);
             if (dataPosition != -1) { // data exists. modify it.
                 writeBytesIntoFile(serializedData.data(), dataSize, dataPosition);
