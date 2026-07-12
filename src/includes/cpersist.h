@@ -56,11 +56,11 @@ public:
 
     // WRITING
     template<typename T>
-    void write(const std::string& name, const T& object, const std::string& parent="") {
+    void write(const std::string& name, const T& object, const uint64_t& parent=0) {
         if (current_file.empty()) {
             cpersist_internal::ErrorManager::get().throwError("Can't write data while no file is chosen.");
         }
-        uint64_t namehash = cpersist_internal::hashString(parent.empty()? name : parent + "." + name);
+        uint64_t namehash = cpersist_internal::hashString(parent==0? name : std::to_string(parent) + "." + name);
         
         std::stringstream dataStream(std::ios::in | std::ios::out | std::ios::binary); // those flags are to allow input, output, and make reading in binary
 
@@ -99,11 +99,11 @@ public:
 
     // READING
     template<typename T>
-    T read(const std::string& name, const std::string& parent="", std::optional<T> defaultValue = std::nullopt) {
+    T read(const std::string& name, const uint64_t& parent=0, std::optional<T> defaultValue = std::nullopt) {
         if (current_file.empty()) {
             cpersist_internal::ErrorManager::get().throwError("Can't read data while no file is chosen.");
         }
-        uint64_t namehash = cpersist_internal::hashString(parent.empty() ? name : parent + "." + name);
+        uint64_t namehash = cpersist_internal::hashString(parent==0? name : std::to_string(parent) + "." + name);
 
         if constexpr (cpersist::hasDeserialize<T>) {
             T object;
@@ -115,7 +115,7 @@ public:
         
         if (dataPosition == static_cast<uint64_t>(-1)) {
             if (defaultValue) {return *defaultValue;} // not found
-            cpersist_internal::ErrorManager::get().throwError("Entry \"" + std::string(parent.empty()? name : parent + "." + name) +"\" not found.");
+            cpersist_internal::ErrorManager::get().throwError("Entry \"" + std::string(parent==0? name : std::to_string(parent) + "." + name) +"\" not found.");
         }
 
         std::ifstream file(std::filesystem::path(folderName) / (current_file + fileExtension), std::ios::binary);

@@ -148,53 +148,7 @@ void SaveManager::writeBytesIntoFile(const char* bytes, const std::uint32_t size
     }
 }
 bool SaveManager::file_contains_data(const std::string& dataname) {
-    std::vector<uint8_t> data;
-    try {
-        data = readFileAsBinary(current_file);
-    } catch (std::exception& e) {
-        return false;    
-    }
-    uint64_t position = 0;
-
-    while (position < data.size()) {
-        // first of all, we need to make sure there's enough room for nameSize
-        if (position + sizeof(uint8_t) > data.size()) {return false;} // data is probably invalid, not found
-
-        // ===== NAMESIZE
-        uint8_t nameSize;
-        std::memcpy(&nameSize, data.data() + position, sizeof(nameSize)); // cool pointer stuff. moves data from the vector to nameSize
-        position += sizeof(nameSize); // move forward
-
-        // ===== NAME
-        // check bounds again
-        if (position + nameSize > data.size()) {return false;}
-
-        std::string currentName(
-            reinterpret_cast<char*>(data.data() + position),
-            nameSize
-        );
-        position += nameSize;
-
-        // ===== DATASIZE
-        if (position + sizeof(uint32_t) > data.size()) {return false;}
-
-        uint32_t dataSize;
-        std::memcpy(&dataSize, data.data() + position, sizeof(dataSize));
-        position += sizeof(dataSize);
-
-        // the position now points at the data itself. move back to dataSize then return it if there's a match.
-        if (currentName == dataname || currentName.starts_with(dataname + ".")) {
-            return true;
-        }
-
-        // the end
-        if (position + dataSize > data.size()) {return false;}
-
-        // move to the next
-        position += dataSize;
-    }
-
-    return false;
+    return getDataPosition(cpersist_internal::hashString(dataname)) != -1;
 }
 
 // COMMIT
@@ -202,7 +156,7 @@ void SaveManager::commit() {
     if (current_file.empty()) {
         cpersist_internal::ErrorManager::get().throwError("Can't commit changes while no file is open.");
     }
-    std::ofstream file(std::filesystem::path(folderName) / (current_file + fileExtension), std::ios::app); // write into <current_file>.dat, append if already exists
+    std::ofstream file(std::filesystem::path(folderName) / (current_file + fileExtension), std::ios::app); // write into <current_file>.<ext>, append if already exists
     if (file.is_open()) {
         file << files[current_file].rdbuf();
     }
