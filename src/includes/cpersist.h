@@ -41,7 +41,21 @@ private:
     }
     std::string fileExtension = ".bin";
     std::string folderName = "cpersist_data";
+
+    SaveManager() = default;   // Private constructor
+    ~SaveManager() = default;  // Optional
 public:
+    // === SINGLETON PROPERTIES
+    SaveManager(const SaveManager&) = delete;
+    SaveManager& operator=(const SaveManager&) = delete;
+
+    
+    static SaveManager& get() {
+        static SaveManager instance;
+        return instance;
+    }
+
+
 
     void init(const bool loadPresentFiles = true, std::optional<std::span<std::string>> initialFiles = std::nullopt);
     void loadExistingFiles();
@@ -152,3 +166,5 @@ public:
     // SETTERS
     void set_file_extension(const std::string& new_extension);
 };
+
+inline SaveManager& saveMgr = SaveManager::get();

@@ -1,32 +1,32 @@
 #include <cpersist.h>
 #include <iostream>
 
-SaveManager sm;
 class myclass {
 public:
     int number = 0;
     void serialize(const uint64_t& parent) {
-        sm.write("number", number, parent);
+        saveMgr.write("number", number, parent); // write number
     }
     void deserialize(const uint64_t& parent) {
-        number = sm.read<int>("number", parent);
+        number = saveMgr.read<int>("number", parent); // load number
     }
 };
 
 int main()
 {
-    sm.init(true);
-    sm.create_new_file("myfile");
-    sm.change_file("myfile");
+    saveMgr.init(true);
+    saveMgr.create_new_file("myfile");
+    saveMgr.change_file("myfile");
+    
     
     myclass obj;
-    if (!sm.file_exists("myfile") || !sm.file_contains_data("obj_inst")) {
+    if (!saveMgr.file_exists("myfile") || !saveMgr.file_contains_data("obj_inst")) { // if no file is present, write it.
         std::cout << "Wrote: " << obj.number << std::endl;
-        sm.write("obj_inst", obj);
-        sm.commit();
-    } else {
+        saveMgr.write("obj_inst", obj); // this will call the object's serialize() function
+        saveMgr.commit();
+    } else { // if a file is present, read it and output the current value
         std::cout << "Reading!" << std::endl;
-        obj = sm.read<myclass>("obj_inst");
+        obj = saveMgr.read<myclass>("obj_inst"); // read as myclass
         std::cout << "Read: " << obj.number << std::endl;
     }
 
