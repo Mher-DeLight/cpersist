@@ -11,6 +11,7 @@
 #include <filesystem>
 #include <optional>
 #include <fstream>
+#include <span>
 #include "error_handler.h"
 #include "serializer.h"
 
@@ -36,17 +37,23 @@ private:
         std::cout << "[CPERSIST LOG] " << message << std::endl;
     }
     std::string fileExtension = ".bin";
+    std::string folderName = "cpersist_data";
 public:
+
+    void init(const bool loadPresentFiles = true, std::optional<std::span<std::string>> initialFiles = std::nullopt);
+    void loadExistingFiles();
+
     bool filename_fits_standards(const std::string& filename); // check if the filename fits the naming standards
     void make_filename_safe(std::string& filename);
 
     bool change_file(const std::string& new_file);             // changes the current file
     void change_file_safe(const std::string& new_file);        // creates file if it doesn't exist, then moves to it in either case
     bool create_new_file(const std::string& new_file);         // creates a new file
+    bool file_exists(const std::string& filename);
 
     // WRITING
     template<typename T>
-    void write(const std::string& name, T& object, const std::string& parent="") {
+    void write(const std::string& name, const T& object, const std::string& parent="") {
         if (current_file.empty()) {
             cpersist_internal::ErrorManager::get().throwError("Can't write data while no file is chosen.");
         }

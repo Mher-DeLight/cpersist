@@ -2,6 +2,27 @@
 #include "includes/cpersist.h"
 #include <algorithm>
 
+void SaveManager::init(const bool loadPresentFiles, std::optional<std::span<std::string>> initialFiles) {
+    std::filesystem::create_directory(folderName); // creates the folder if it doesn't exist
+    
+    if (loadPresentFiles) {
+        loadExistingFiles();
+    }
+
+    if (initialFiles) {
+        for (const std::string& inf : *initialFiles) {
+            if (file_exists(inf)) {continue;}
+            else {create_new_file(inf);}
+        }
+    }
+}
+void SaveManager::loadExistingFiles() {
+    for (const auto& entry : std::filesystem::directory_iterator(folderName)) {
+        if (entry.is_regular_file() && entry.path().extension() == fileExtension) {
+            create_new_file(entry.path().stem().string());
+        }
+    }
+}
 
 // CHECKERS
 bool SaveManager::filename_fits_standards(const std::string& filename) {
@@ -12,6 +33,13 @@ void SaveManager::make_filename_safe(std::string& filename) {
     if (filename_fits_standards(filename)) {return;}
 
     std::replace(filename.begin(), filename.end(), ' ', '_');
+}
+bool SaveManager::file_exists(const std::string& filename) {
+    if (files.contains(filename)) {
+        return true;
+    } else {
+        return false;
+    }
 }
 
 // CURRENT FILE MANIPULATION
@@ -35,7 +63,7 @@ void SaveManager::change_file_safe(const std::string& new_file) {
 bool SaveManager::create_new_file(const std::string& new_file) {
     if (!filename_fits_standards(new_file)) {return false;} // doesn't fit naming standards
     
-    if (files.contains(new_file)) {
+    if (file_exists(new_file)) {
         return false; // file already exists
     }
     
@@ -95,7 +123,7 @@ uint64_t SaveManager::getDataPosition(const std::string& name, bool skipDataSize
 }
 std::vector<uint8_t> SaveManager::readFileAsBinary(const std::string& filename)
 {
-    std::ifstream file(filename + fileExtension, std::ios::binary);
+    std::ifstream file(std::filesystem::path(folderName) / (filename + fileExtension), std::ios::binary);
 
     if (!file) {
         cpersist_internal::ErrorManager::get().throwError("Failed to open file: " + filename + fileExtension);
@@ -115,7 +143,7 @@ std::vector<uint8_t> SaveManager::readFileAsBinary(const std::string& filename)
     return bytes;
 }
 void SaveManager::writeBytesIntoFile(const char* bytes, const std::uint32_t size, const std::uint64_t position) {
-    std::fstream file(current_file + fileExtension, std::ios::in | std::ios::out | std::ios::binary);
+    std::fstream file(std::filesystem::path(folderName) / (current_file + fileExtension), std::ios::in | std::ios::out | std::ios::binary);
 
     if (!file) {
         cpersist_internal::ErrorManager::get().throwError("Failed to modify file: " + current_file + fileExtension + " at position " + std::to_string(position));
@@ -184,7 +212,7 @@ void SaveManager::commit() {
     if (current_file.empty()) {
         cpersist_internal::ErrorManager::get().throwError("Can't commit changes while no file is open.");
     }
-    std::ofstream file(current_file + fileExtension, std::ios::app); // write into <current_file>.dat, append if already exists
+    std::ofstream file(std::filesystem::path(folderName) / (current_file + fileExtension), std::ios::app); // write into <current_file>.dat, append if already exists
     if (file.is_open()) {
         file << files[current_file].rdbuf();
     }
