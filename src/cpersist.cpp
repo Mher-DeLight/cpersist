@@ -241,3 +241,14 @@ const std::string& SaveManager::get_file_extension() {
 void SaveManager::set_file_extension(const std::string& new_extension) {
     fileExtension = "." + new_extension;
 }
+
+std::string cpersist_internal::hashString(const std::string& s)  {
+    uint64_t hash = 14695981039346656037ull;
+
+    for (unsigned char c : s) {
+        hash ^= c;
+        hash *= 1099511628211ull;
+    }
+
+    return std::to_string(hash);
+}

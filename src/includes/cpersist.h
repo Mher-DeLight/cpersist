@@ -26,6 +26,9 @@ namespace cpersist {
         t.deserialize(parent);
     };
 }
+namespace cpersist_internal {
+    std::string hashString(const std::string& s);
+}
 
 class SaveManager {
 private:
@@ -57,7 +60,7 @@ public:
         if (current_file.empty()) {
             cpersist_internal::ErrorManager::get().throwError("Can't write data while no file is chosen.");
         }
-        std::string full_name = parent.empty()? name : parent + "." + name;
+        std::string full_name = cpersist_internal::hashString(parent.empty()? name : parent + "." + name);
         
         std::stringstream dataStream(std::ios::in | std::ios::out | std::ios::binary); // those flags are to allow input, output, and make reading in binary
 
@@ -103,7 +106,7 @@ public:
         if (current_file.empty()) {
             cpersist_internal::ErrorManager::get().throwError("Can't read data while no file is chosen.");
         }
-        std::string full_name = parent.empty() ? name : parent + "." + name;
+        std::string full_name = cpersist_internal::hashString(parent.empty() ? name : parent + "." + name);
 
         if constexpr (cpersist::hasDeserialize<T>) {
             T object;
@@ -118,7 +121,7 @@ public:
             cpersist_internal::ErrorManager::get().throwError("Entry \"" + std::string(full_name) +"\" not found.");
         }
 
-        std::ifstream file(std::string(current_file + fileExtension), std::ios::binary);
+        std::ifstream file(std::filesystem::path(folderName) / (current_file + fileExtension), std::ios::binary);
         if (!file) {
             cpersist_internal::ErrorManager::get().throwError("Can't read file " + current_file + fileExtension + "; it might be deleted or corrupted");
         }
