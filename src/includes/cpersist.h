@@ -56,10 +56,11 @@ private:
     std::string fileExtension = ".bin";
     std::string folderName = "savedata";
     std::filesystem::path fullFilePath;
+    bool encryption_enabled = true;
 
     SaveManager() {
         init(true);
-    };   // Private constructor
+    };
     ~SaveManager() = default;
     void init(const bool loadPresentFiles = true, std::optional<std::span<std::string>> initialFiles = std::nullopt);
 public:
@@ -115,7 +116,18 @@ public:
             cpersist_internal::ErrorManager::get().throwError("Serialization failed.");
         }
 
-        std::string serializedData = dataStream.str();
+        std::string serialized = dataStream.str();
+
+        std::vector<uint8_t> bytes(
+            reinterpret_cast<const uint8_t*>(serialized.data()),
+            reinterpret_cast<const uint8_t*>(serialized.data()) + serialized.size()
+        );
+
+        std::vector<uint8_t> serializedData =
+            encryption_enabled
+                ? encrMgr.encrypt(bytes)
+                : std::move(bytes);
+        
         uint32_t dataSize = serializedData.size();
         uint8_t nameSize = fullname.size();
 
@@ -123,7 +135,7 @@ public:
         if (file_exists(current_file)) {
             uint64_t dataPosition = getDataPosition(fullname);
             if (dataPosition != -1) { // data exists. modify it.
-                writeBytesIntoFile(serializedData.data(), dataSize, dataPosition);
+                writeBytesIntoFile(reinterpret_cast<const char*>(serializedData.data()), dataSize, dataPosition);
                 return; // already modified existing entry; don't append a new one
             }
         }
@@ -132,11 +144,11 @@ public:
         file.write(reinterpret_cast<const char*>(&nameSize), sizeof(uint8_t));
         file.write(fullname.data(), nameSize);  // write the name hash, always 8 bytes thanks to hashing
         file.write(reinterpret_cast<const char*>(&dataSize), sizeof(dataSize)); // then write the data size
-        file.write(serializedData.data(), serializedData.size());               // then write the data
+        file.write(reinterpret_cast<const char*>(serializedData.data()), serializedData.size());    // then write the data
     };
     uint64_t getDataPosition(const std::string& name, const bool loose = false);
     std::vector<uint8_t> readFileAsBinary(const std::string& filename);
-    void writeBytesIntoFile(const char* bytes, const std::uint32_t size, const std::uint64_t position);
+    void writeBytesIntoFile(const char* bytes, const std::uint32_t size, const std::uint64_t position, const bool encrypt = true);
 
     // READING
     template<typename T>

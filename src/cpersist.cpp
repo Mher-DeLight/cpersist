@@ -173,16 +173,25 @@ std::vector<uint8_t> SaveManager::readFileAsBinary(const std::string& filename)
 
     return bytes;
 }
-void SaveManager::writeBytesIntoFile(const char* bytes, const std::uint32_t size, const std::uint64_t position) {
+void SaveManager::writeBytesIntoFile(const char* bytes, const std::uint32_t size, const std::uint64_t position, const bool encrypt) {
     std::fstream file(fullFilePath, std::ios::in | std::ios::out | std::ios::binary);
 
     if (!file) {
         cpersist_internal::ErrorManager::get().throwError("Failed to modify file: " + current_file + fileExtension + " at position " + std::to_string(position));
     }
+
+    std::vector<uint8_t> data = encrypt? encrMgr.encrypt(std::vector<uint8_t>(bytes, bytes + size)) : std::vector<uint8_t>(bytes, bytes + size);
+
     std::streamoff offset(position);
     file.seekp(offset);
-    file.write(reinterpret_cast<const char*>(&size), sizeof(size));
-    file.write(bytes, size);
+    
+    // write data size
+    std::uint32_t totalSize = static_cast<std::uint32_t>(data.size());
+    file.write(reinterpret_cast<const char*>(&totalSize), sizeof(totalSize));
+
+    // write data
+    file.write(reinterpret_cast<const char*>(data.data()), data.size());
+    
 
     if (!file) {
         cpersist_internal::ErrorManager::get().throwError("Failed to write to file " + current_file + fileExtension);
