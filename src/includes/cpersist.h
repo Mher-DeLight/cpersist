@@ -53,7 +53,8 @@ private:
         std::cout << "[CPERSIST LOG] " << message << std::endl;
     }
     std::string fileExtension = ".bin";
-    std::string folderName = "cpersist_data";
+    std::string folderName = "savedata";
+    std::filesystem::path fullFilePath;
 
     SaveManager() {
         init(true);

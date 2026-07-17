@@ -48,10 +48,12 @@ bool SaveManager::change_file(const std::string& new_file) {
     if (!files.count(new_file)) {return false;} // file doesn't exist
 
     current_file = new_file;
+    fullFilePath = std::filesystem::path(folderName) / (current_file + fileExtension);
     return true;
 }
 void SaveManager::change_file_safe(const std::string& new_file) {
     current_file = new_file; // currently not present, but will be inserted later
+    fullFilePath = std::filesystem::path(folderName) / (current_file + fileExtension);
     if (!filename_fits_standards(current_file)) {
         make_filename_safe(current_file);
     }
@@ -77,6 +79,7 @@ bool SaveManager::open(const std::string& filename) {
     }
 
     current_file = filename;
+    fullFilePath = std::filesystem::path(folderName) / (current_file + fileExtension);
     return true;
 }
 void SaveManager::ensure_exists(std::initializer_list<std::string> filenames) {
@@ -151,7 +154,7 @@ uint64_t SaveManager::getDataPosition(const std::string& name, const bool loose)
 }
 std::vector<uint8_t> SaveManager::readFileAsBinary(const std::string& filename)
 {
-    std::ifstream file(std::filesystem::path(folderName) / (filename + fileExtension), std::ios::binary);
+    std::ifstream file(fullFilePath, std::ios::binary);
 
     if (!file) {
         cpersist_internal::ErrorManager::get().throwError("Failed to open file: " + filename + fileExtension);
@@ -171,7 +174,7 @@ std::vector<uint8_t> SaveManager::readFileAsBinary(const std::string& filename)
     return bytes;
 }
 void SaveManager::writeBytesIntoFile(const char* bytes, const std::uint32_t size, const std::uint64_t position) {
-    std::fstream file(std::filesystem::path(folderName) / (current_file + fileExtension), std::ios::in | std::ios::out | std::ios::binary);
+    std::fstream file(fullFilePath, std::ios::in | std::ios::out | std::ios::binary);
 
     if (!file) {
         cpersist_internal::ErrorManager::get().throwError("Failed to modify file: " + current_file + fileExtension + " at position " + std::to_string(position));
@@ -194,7 +197,7 @@ void SaveManager::commit() {
     if (current_file.empty()) {
         cpersist_internal::ErrorManager::get().throwError("Can't commit changes while no file is open.");
     }
-    std::ofstream file(std::filesystem::path(folderName) / (current_file + fileExtension), std::ios::app); // write into <current_file>.<ext>, append if already exists
+    std::ofstream file(fullFilePath, std::ios::app); // write into <current_file>.<ext>, append if already exists
     if (file.is_open()) {
         file << files[current_file].rdbuf();
     }
