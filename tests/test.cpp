@@ -1,22 +1,13 @@
 #include <cpersist.h>
 #include <iostream>
 
-class myclass {
-public:
-    int number = 0;
-
-    template<typename Archive>
-    void archive(Archive& ar) {
-        ar("number", number);
-    }
-};
-
 int main()
 {
     saveMgr.open("myfile");
-    saveMgr.write("inst", myclass());
+    int number;
+    saveMgr.read_into("number", number);
+    std::cout << number << std::endl;
     saveMgr.commit();
-    std::cout << saveMgr.contains("inst") << std::endl;
 
 
     return 0;

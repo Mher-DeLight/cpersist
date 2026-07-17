@@ -183,6 +183,11 @@ public:
         cpersist::Serializer<T>::read(dataStream, object);
         return object;
     }
+    template<typename T>
+    void read_into(const std::string& name, T& result_into, std::optional<T> defaultValue = std::nullopt) {
+        result_into = read<T>(name, defaultValue);
+    }
+    
     bool contains(const std::string& dataname);
 
     // COMMIT
