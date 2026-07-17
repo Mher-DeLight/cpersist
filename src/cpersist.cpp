@@ -99,7 +99,7 @@ void SaveManager::ensure_exists(std::vector<std::string> filenames) {
 }
 
 // WRITING / READING
-uint64_t SaveManager::getDataPosition(const std::string& name) {
+uint64_t SaveManager::getDataPosition(const std::string& name, const bool loose) {
     std::vector<uint8_t> data;
     try {
         data = readFileAsBinary(current_file);
@@ -136,7 +136,7 @@ uint64_t SaveManager::getDataPosition(const std::string& name) {
         position += sizeof(dataSize);
 
         // the position now points at the data itself. move back to dataSize then return it if there's a match.
-        if (currentName == name) {
+        if (currentName == name || (currentName.starts_with(name) && loose)) {
             return static_cast<uint64_t>(position - sizeof(dataSize));
         }
 
@@ -186,7 +186,7 @@ void SaveManager::writeBytesIntoFile(const char* bytes, const std::uint32_t size
     }
 }
 bool SaveManager::contains(const std::string& dataname) {
-    return getDataPosition(dataname) != -1;
+    return getDataPosition(dataname, true) != -1;
 }
 
 // COMMIT

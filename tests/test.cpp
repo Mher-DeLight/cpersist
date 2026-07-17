@@ -1,18 +1,13 @@
 #include <cpersist.h>
 #include <iostream>
 
-// TODO: Implement archives. You'll have two Archives. The Save and Load archive. This makes you only handle "manageSave" function instead of
-// "serialize" and "deserialize."
-
 class myclass {
 public:
     int number = 0;
 
-    void write(const std::string& parent) {
-        saveMgr.write("number", number, parent);
-    }
-    void read(const std::string& parent) {
-        number = saveMgr.read<int>("number", std::nullopt, parent);
+    template<typename Archive>
+    void archive(Archive& ar) {
+        ar("number", number);
     }
 };
 

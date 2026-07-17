@@ -16,16 +16,28 @@
 #include "error_handler.h"
 #include "serializer.h"
 
+class WriteArchive;
+class ReadArchive; // forward declaration so we can use them in hasArchive
+
 namespace cpersist {
     template<typename T>
-    concept hasWrite = requires(T& t, const uint64_t& parent) {
+    concept hasWrite = requires(T& t, const std::string& parent) {
         t.write(parent);
     };
 
     template<typename T>
-    concept hasRead = requires(T& t, const uint64_t& parent) {
+    concept hasRead = requires(T& t, const std::string& parent) {
         t.read(parent);
     };
+
+    template<typename T>
+    concept hasArchive =
+        requires(T& t, WriteArchive& war) {
+            t.archive(war);
+        } &&
+        requires(T& t, ReadArchive& rar) {
+            t.archive(rar);
+        };
 }
 namespace cpersist_internal {
     uint64_t hashString(const std::string& s);
@@ -84,8 +96,13 @@ public:
         
         std::stringstream dataStream(std::ios::in | std::ios::out | std::ios::binary); // those flags are to allow input, output, and make reading in binary
 
+        if constexpr (cpersist::hasArchive<T>) {
+            WriteArchive ar(fullname);
+            const_cast<T&>(object).archive(ar);
+            return;
+        }
         if constexpr (cpersist::hasWrite<T>) { // we need a constexpr because otherwise we would have a compiler-time error
-            object.write(fullname); // object contains a serialize function
+            const_cast<T&>(object).write(fullname); // object contains a serialize function
             return;
         } else {
             cpersist::Serializer<T>::write(dataStream, object);
@@ -115,7 +132,7 @@ public:
         file.write(reinterpret_cast<const char*>(&dataSize), sizeof(dataSize)); // then write the data size
         file.write(serializedData.data(), serializedData.size());               // then write the data
     };
-    uint64_t getDataPosition(const std::string& name);
+    uint64_t getDataPosition(const std::string& name, const bool loose = false);
     std::vector<uint8_t> readFileAsBinary(const std::string& filename);
     void writeBytesIntoFile(const char* bytes, const std::uint32_t size, const std::uint64_t position);
 
@@ -127,12 +144,20 @@ public:
         }
         std::string fullname = parent.empty()? name : parent + "." + name;
 
+        if constexpr (cpersist::hasArchive<T>) {
+            T object;
+            ReadArchive ar(fullname);
+            object.archive(ar);
+            return object;
+        }
+
         if constexpr (cpersist::hasRead<T>) {
             T object;
             object.read(fullname);
             return object;
         }
-
+        
+        
         uint64_t dataPosition = getDataPosition(fullname);
         
         if (dataPosition == static_cast<uint64_t>(-1)) {
@@ -176,6 +201,36 @@ public:
 };
 
 inline SaveManager& saveMgr = SaveManager::get();
-class SaveArchive {
 
+// ARCHIVES
+
+class Archive {
+protected: // we don't want others to access it, only it and its children
+    std::string parent;
+
+public:
+    explicit Archive(std::string parent)
+        : parent(std::move(parent)) {}
+};
+
+class WriteArchive : public Archive {
+public:
+    using Archive::Archive; // inherit the constructors too
+
+    template<typename T>
+    void operator()(const std::string& key, T& value)
+    {
+        saveMgr.write(key, value, parent);
+    }
+};
+
+class ReadArchive : public Archive {
+public:
+    using Archive::Archive;
+
+    template<typename T>
+    void operator()(const std::string& key, T& value)
+    {
+        value = saveMgr.read<T>(key, std::nullopt, parent);
+    }
 };
