@@ -15,6 +15,7 @@
 #include <initializer_list>
 #include "error_handler.h"
 #include "serializer.h"
+#include "aes.h"
 
 class WriteArchive;
 class ReadArchive; // forward declaration so we can use them in hasArchive

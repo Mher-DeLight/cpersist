@@ -6,7 +6,14 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-add_library(cpersist src/includes/cpersist.h src/cpersist.cpp src/includes/error_handler.h src/error_handler.cpp src/includes/serializer.h)
+add_library(cpersist src/includes/cpersist.h src/cpersist.cpp src/includes/error_handler.h src/error_handler.cpp src/includes/serializer.h src/aes.cpp src/includes/aes.h)
+
+find_package(OpenSSL REQUIRED)
+
+target_link_libraries(cpersist
+    PUBLIC
+        OpenSSL::Crypto
+)
 
 
 if(CPERSIST_BUILD_TESTS)
