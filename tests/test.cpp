@@ -15,7 +15,7 @@ public:
 
 int main()
 {
-    saveMgr.init(true);
+    saveMgr.log_filenames();
     saveMgr.create_new_file("myfile");
     saveMgr.change_file("myfile");
     
