@@ -79,7 +79,7 @@ bool SaveManager::open(const std::string& filename) {
     current_file = filename;
     return true;
 }
-void SaveManager::make_sure_exists(std::initializer_list<std::string> filenames) {
+void SaveManager::ensure_exists(std::initializer_list<std::string> filenames) {
     for (auto fn : filenames) {
         make_filename_safe(fn);
 
@@ -88,7 +88,7 @@ void SaveManager::make_sure_exists(std::initializer_list<std::string> filenames)
         }
     }
 }
-void SaveManager::make_sure_exists(std::vector<std::string> filenames) {
+void SaveManager::ensure_exists(std::vector<std::string> filenames) {
     for (auto fn : filenames) {
         make_filename_safe(fn);
 
@@ -185,7 +185,7 @@ void SaveManager::writeBytesIntoFile(const char* bytes, const std::uint32_t size
         cpersist_internal::ErrorManager::get().throwError("Failed to write to file " + current_file + fileExtension);
     }
 }
-bool SaveManager::file_contains_data(const std::string& dataname) {
+bool SaveManager::contains(const std::string& dataname) {
     return getDataPosition(dataname) != -1;
 }
 

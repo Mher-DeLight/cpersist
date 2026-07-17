@@ -18,13 +18,13 @@
 
 namespace cpersist {
     template<typename T>
-    concept hasSerialize = requires(T& t, const uint64_t& parent) {
-        t.serialize(parent);
+    concept hasWrite = requires(T& t, const uint64_t& parent) {
+        t.write(parent);
     };
 
     template<typename T>
-    concept hasDeserialize = requires(T& t, const uint64_t& parent) {
-        t.deserialize(parent);
+    concept hasRead = requires(T& t, const uint64_t& parent) {
+        t.read(parent);
     };
 }
 namespace cpersist_internal {
@@ -71,8 +71,8 @@ public:
     bool create_new_file(const std::string& new_file);         // creates a new file
     bool file_exists(const std::string& filename);
     bool open(const std::string& filename);
-    void make_sure_exists(std::initializer_list<std::string> filenames);
-    void make_sure_exists(std::vector<std::string> filenames);
+    void ensure_exists(std::initializer_list<std::string> filenames);
+    void ensure_exists(std::vector<std::string> filenames);
 
     // WRITING
     template<typename T>
@@ -84,8 +84,8 @@ public:
         
         std::stringstream dataStream(std::ios::in | std::ios::out | std::ios::binary); // those flags are to allow input, output, and make reading in binary
 
-        if constexpr (cpersist::hasSerialize<T>) { // we need a constexpr because otherwise we would have a compiler-time error
-            object.serialize(fullname); // object contains a serialize function
+        if constexpr (cpersist::hasWrite<T>) { // we need a constexpr because otherwise we would have a compiler-time error
+            object.write(fullname); // object contains a serialize function
             return;
         } else {
             cpersist::Serializer<T>::write(dataStream, object);
@@ -127,10 +127,9 @@ public:
         }
         std::string fullname = parent.empty()? name : parent + "." + name;
 
-        if constexpr (cpersist::hasDeserialize<T>) {
+        if constexpr (cpersist::hasRead<T>) {
             T object;
-            debugLog("DESERIALZE");
-            object.deserialize(fullname);
+            object.read(fullname);
             return object;
         }
 
@@ -159,7 +158,7 @@ public:
         cpersist::Serializer<T>::read(dataStream, object);
         return object;
     }
-    bool file_contains_data(const std::string& dataname);
+    bool contains(const std::string& dataname);
 
     // COMMIT
     void commit();
@@ -177,3 +176,6 @@ public:
 };
 
 inline SaveManager& saveMgr = SaveManager::get();
+class SaveArchive {
+
+};

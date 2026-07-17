@@ -1,29 +1,29 @@
 #include <cpersist.h>
 #include <iostream>
 
-// TODO: Implement archives. You'll have to Archives. The Save and Load archive. This makes you only handle "manageSave" function instead of
+// TODO: Implement archives. You'll have two Archives. The Save and Load archive. This makes you only handle "manageSave" function instead of
 // "serialize" and "deserialize."
 
 class myclass {
 public:
     int number = 0;
 
-    void serialize(const std::string& parent) {
+    void write(const std::string& parent) {
         saveMgr.write("number", number, parent);
     }
-    void deserialize(const std::string& parent) {
+    void read(const std::string& parent) {
         number = saveMgr.read<int>("number", std::nullopt, parent);
     }
 };
 
 int main()
 {
-    saveMgr.make_sure_exists({"myfile", "yourfile"});
+    saveMgr.ensure_exists({"myfile", "yourfile"});
     saveMgr.open("myfile");
     
     myclass obj;
 
-    if (!saveMgr.file_exists("myfile") || !saveMgr.file_contains_data("inst")) { // if no file is present, write it.
+    if (!saveMgr.file_exists("myfile") || !saveMgr.contains("inst")) { // if no file is present, write it.
         std::cout << "Writing!" << std::endl;
         saveMgr.write("inst", obj); // this will call the object's serialize() function
         std::cout << "Wrote: " << obj.number << std::endl;
@@ -32,6 +32,7 @@ int main()
         std::cout << "Reading!" << std::endl;
         obj = saveMgr.read<myclass>("inst"); // read as myclass
         std::cout << "Read: " << obj.number << std::endl;
+        
     }
 
 
