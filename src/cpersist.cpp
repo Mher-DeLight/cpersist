@@ -72,7 +72,7 @@ bool SaveManager::create_new_file(const std::string& new_file) {
 }
 
 // WRITING / READING
-uint64_t SaveManager::getDataPosition(const uint64_t& namehash) {
+uint64_t SaveManager::getDataPosition(const std::string& name) {
     std::vector<uint8_t> data;
     try {
         data = readFileAsBinary(current_file);
@@ -84,11 +84,22 @@ uint64_t SaveManager::getDataPosition(const uint64_t& namehash) {
     while (position < data.size()) {
         // ===== NAME
         // check bounds
-        if (position + sizeof(uint64_t) > data.size()) {return -1;}
+        if (position + sizeof(uint8_t) > data.size()) {return -1;}
 
-        uint64_t currentName;
-        std::memcpy(&currentName, data.data() + position, sizeof(currentName));
-        position += sizeof(uint64_t);
+        uint8_t nameSize;
+        std::memcpy(&nameSize, data.data() + position, sizeof(nameSize));
+        position += sizeof(nameSize);
+
+
+        // ===== NAME
+        // check bounds
+        if (position + nameSize > data.size()) {return -1;}
+
+        std::string currentName(
+            reinterpret_cast<const char*>(data.data() + position),
+            nameSize
+        );
+        position += nameSize;
 
         // ===== DATASIZE
         if (position + sizeof(uint32_t) > data.size()) {return -1;}
@@ -98,7 +109,7 @@ uint64_t SaveManager::getDataPosition(const uint64_t& namehash) {
         position += sizeof(dataSize);
 
         // the position now points at the data itself. move back to dataSize then return it if there's a match.
-        if (currentName == namehash) {
+        if (currentName == name) {
             return static_cast<uint64_t>(position - sizeof(dataSize));
         }
 
@@ -148,7 +159,7 @@ void SaveManager::writeBytesIntoFile(const char* bytes, const std::uint32_t size
     }
 }
 bool SaveManager::file_contains_data(const std::string& dataname) {
-    return getDataPosition(cpersist_internal::hashString(dataname)) != -1;
+    return getDataPosition(dataname) != -1;
 }
 
 // COMMIT
