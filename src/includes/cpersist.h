@@ -47,6 +47,7 @@ private:
         init(true);
     };   // Private constructor
     ~SaveManager() = default;
+    void init(const bool loadPresentFiles = true, std::optional<std::span<std::string>> initialFiles = std::nullopt);
 public:
     // === SINGLETON PROPERTIES
     SaveManager(const SaveManager&) = delete;
@@ -60,7 +61,6 @@ public:
 
 
 
-    void init(const bool loadPresentFiles = true, std::optional<std::span<std::string>> initialFiles = std::nullopt);
     void loadExistingFiles();
 
     bool filename_fits_standards(const std::string& filename); // check if the filename fits the naming standards
