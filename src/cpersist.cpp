@@ -136,7 +136,7 @@ uint64_t SaveManager::getDataPosition(const std::string& name, const bool loose)
         position += sizeof(dataSize);
 
         // the position now points at the data itself. move back to dataSize then return it if there's a match.
-        if (currentName == name || (currentName.starts_with(name) && loose)) {
+        if (currentName == name || (currentName.starts_with(name + ".") && loose)) {
             return static_cast<uint64_t>(position - sizeof(dataSize));
         }
 
