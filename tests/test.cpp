@@ -1,6 +1,9 @@
 #include <cpersist.h>
 #include <iostream>
 
+// TODO: Implement archives. You'll have to Archives. The Save and Load archive. This makes you only handle "manageSave" function instead of
+// "serialize" and "deserialize."
+
 class myclass {
 public:
     int number = 0;
@@ -15,8 +18,7 @@ public:
 
 int main()
 {
-    saveMgr.log_filenames();
-    saveMgr.create_new_file("myfile");
+    saveMgr.make_sure_exists({"myfile", "yourfile", "theirfile", "itsfile"});
     saveMgr.change_file("myfile");
     
     myclass obj;

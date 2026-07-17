@@ -12,6 +12,7 @@
 #include <optional>
 #include <fstream>
 #include <span>
+#include <initializer_list>
 #include "error_handler.h"
 #include "serializer.h"
 
@@ -69,6 +70,9 @@ public:
     void change_file_safe(const std::string& new_file);        // creates file if it doesn't exist, then moves to it in either case
     bool create_new_file(const std::string& new_file);         // creates a new file
     bool file_exists(const std::string& filename);
+    bool open(const std::string& filename);
+    void make_sure_exists(std::initializer_list<std::string> filenames);
+    void make_sure_exists(std::vector<std::string> filenames);
 
     // WRITING
     template<typename T>

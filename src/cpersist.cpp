@@ -70,6 +70,24 @@ bool SaveManager::create_new_file(const std::string& new_file) {
     files.emplace(new_file, std::stringstream{});
     return true;
 }
+bool SaveManager::open(const std::string& filename) {
+    if (!filename_fits_standards(filename)) {return false;} // doesn't fit naming standards
+    if (!files.count(current_file)) { // file doesn't exist, create it
+        files.try_emplace(current_file);
+    }
+
+    current_file = filename;
+    return true;
+}
+void SaveManager::make_sure_exists(std::initializer_list<std::string> filenames) {
+    for (auto fn : filenames) {
+        make_filename_safe(fn);
+
+        if (!file_exists(fn)) {
+            create_new_file(fn);
+        }
+    }
+}
 
 // WRITING / READING
 uint64_t SaveManager::getDataPosition(const std::string& name) {
