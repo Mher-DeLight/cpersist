@@ -18,8 +18,8 @@ public:
 
 int main()
 {
-    saveMgr.make_sure_exists({"myfile", "yourfile", "theirfile", "itsfile"});
-    saveMgr.change_file("myfile");
+    saveMgr.make_sure_exists({"myfile", "yourfile"});
+    saveMgr.open("myfile");
     
     myclass obj;
 

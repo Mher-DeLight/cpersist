@@ -88,6 +88,15 @@ void SaveManager::make_sure_exists(std::initializer_list<std::string> filenames)
         }
     }
 }
+void SaveManager::make_sure_exists(std::vector<std::string> filenames) {
+    for (auto fn : filenames) {
+        make_filename_safe(fn);
+
+        if (!file_exists(fn)) {
+            create_new_file(fn);
+        }
+    }
+}
 
 // WRITING / READING
 uint64_t SaveManager::getDataPosition(const std::string& name) {
