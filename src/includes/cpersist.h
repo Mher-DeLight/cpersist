@@ -146,10 +146,11 @@ public:
 
         
         if (file_exists(current_file)) {
-            uint64_t dataPosition = getDataPosition(fullname);
-            if (dataPosition != -1) { // data exists. modify it.
-                writeBytesIntoFile(reinterpret_cast<const char*>(serialized.data()), dataSize, dataPosition);
-                return; // already modified existing entry; don't append a new one
+            for (auto fd : files[current_file]) {
+                if (fd.name == fullname) {
+                    fd.value = serialized;
+                    return;
+                }
             }
         }
 
@@ -158,7 +159,6 @@ public:
     };
     uint64_t getDataPosition(const std::string& name, const bool loose = false);
     std::vector<uint8_t> readFileAsBinary(const std::string& filename);
-    void writeBytesIntoFile(const char* bytes, const std::uint32_t size, const std::uint64_t position, const bool encrypt = true);
     bool isFileEncrypted();
 
     // READING

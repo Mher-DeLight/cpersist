@@ -1,19 +1,6 @@
 #include <cpersist.h>
 #include <iostream>
 
-// TODO: fix writeBytesIntoFile
-// TODO: fix whatever the fuck is wrong with read
-
-class myclass {
-public:
-    int number;
-
-    template<typename Archive>
-    void archive(Archive& ar) {
-        ar("number", number);
-    }
-};
-
 int main()
 {
     saveMgr.enable_encryption(true);
