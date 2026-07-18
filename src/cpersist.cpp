@@ -153,7 +153,7 @@ uint64_t SaveManager::getDataPosition(const std::string& name, const bool loose)
     return -1;
 }
 std::vector<uint8_t> SaveManager::readFileAsBinary(const std::string& filename) {
-    bool fileEncr = true;//isFileEncrypted();
+    bool fileEncr = isFileEncrypted();
     std::filesystem::path customFilePath = std::filesystem::path(folderName) / (filename + fileExtension);
     std::ifstream file(customFilePath, std::ios::binary);
 

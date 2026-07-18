@@ -4,14 +4,15 @@
 int main()
 {
     saveMgr.enable_encryption(true);
-    saveMgr.set_encryption_key("hellothere");
+    saveMgr.set_encryption_key("mysecretkey");
 
     saveMgr.open("myfile");
-    saveMgr.write("number", 1);
-    saveMgr.write("other_number", 2);
+
+    saveMgr.write("a", 3);
+    saveMgr.write("b", 5);
     saveMgr.commit();
 
-    std::cout << "Number: " << saveMgr.read<int>("number") << " Other number: " << saveMgr.read<int>("other_number") << std::endl;
+    std::cout << "a=" << saveMgr.read<int>("a") << " b=" << saveMgr.read<int>("b") << std::endl;
 
     return 0;
 }

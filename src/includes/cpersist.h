@@ -222,7 +222,11 @@ public:
     void read_into(const std::string& name, T& result_into, std::optional<T> defaultValue = std::nullopt, const std::string& parent = "") {
         result_into = read<T>(name, defaultValue, parent);
     }
-    
+    template<typename T, typename S>
+    void read_into_stream(const std::string& name, S& stream, std::optional<T> defaultValue = std::nullopt, const std::string& parent = "") {
+        stream << read<T>(name, defaultValue, parent);
+    }
+
     bool contains(const std::string& dataname);
 
     // COMMIT
