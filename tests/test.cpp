@@ -1,6 +1,9 @@
 #include <cpersist.h>
 #include <iostream>
 
+// TODO: fix writeBytesIntoFile
+// TODO: fix whatever the fuck is wrong with read
+
 int main()
 {
     std::vector<uint8_t> SECRET_KEY = {
@@ -13,8 +16,11 @@ int main()
     encrMgr.setEncryptionKey(std::move(SECRET_KEY));
 
     saveMgr.open("myfile");
-    saveMgr.write("number", 5);
+    saveMgr.write("number", 3);
+    saveMgr.write("other_number", 5);
     saveMgr.commit();
+
+    std::cout << "Number: " << saveMgr.read<int>("number") << " Other number: " << saveMgr.read<int>("other_number") << std::endl;
 
     return 0;
 }

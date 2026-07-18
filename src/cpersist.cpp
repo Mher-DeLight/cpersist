@@ -109,7 +109,7 @@ uint64_t SaveManager::getDataPosition(const std::string& name, const bool loose)
     } catch (std::exception& e) {
         return -1; 
     }
-    uint64_t position = 0;
+    uint64_t position = 0; // encryption flag is already skipped
 
     while (position < data.size()) {
         // ===== NAME
@@ -152,9 +152,10 @@ uint64_t SaveManager::getDataPosition(const std::string& name, const bool loose)
 
     return -1;
 }
-std::vector<uint8_t> SaveManager::readFileAsBinary(const std::string& filename)
-{
-    std::ifstream file(fullFilePath, std::ios::binary);
+std::vector<uint8_t> SaveManager::readFileAsBinary(const std::string& filename) {
+    bool fileEncr = true;//isFileEncrypted();
+    std::filesystem::path customFilePath = std::filesystem::path(folderName) / (filename + fileExtension);
+    std::ifstream file(customFilePath, std::ios::binary);
 
     if (!file) {
         cpersist_internal::ErrorManager::get().throwError("Failed to open file: " + filename + fileExtension);
@@ -170,7 +171,12 @@ std::vector<uint8_t> SaveManager::readFileAsBinary(const std::string& filename)
     if (!file.read(reinterpret_cast<char*>(bytes.data()), size)) {
         cpersist_internal::ErrorManager::get().throwError("Cannot read data file " + filename + fileExtension);
     }
-
+    bytes.erase(bytes.begin());
+    
+    if (fileEncr) {
+        bytes = encrMgr.decrypt(bytes);
+    }
+    
     return bytes;
 }
 void SaveManager::writeBytesIntoFile(const char* bytes, const std::uint32_t size, const std::uint64_t position, const bool encrypt) {
@@ -200,13 +206,27 @@ void SaveManager::writeBytesIntoFile(const char* bytes, const std::uint32_t size
 bool SaveManager::contains(const std::string& dataname) {
     return getDataPosition(dataname, true) != -1;
 }
+bool SaveManager::isFileEncrypted() {
+    std::ifstream file(fullFilePath, std::ios::binary);
+
+    if (!file) {
+        cpersist_internal::ErrorManager::get().throwError("Failed to open file: " + current_file);
+    }
+
+    uint8_t encryptionMagicByte;
+    if (!file.read(reinterpret_cast<char*>(&encryptionMagicByte), 1)) {
+        cpersist_internal::ErrorManager::get().throwError("Cannot read data file " + current_file);
+    }
+
+    return encryptionMagicByte != 0x00;
+}
 
 // COMMIT
 void SaveManager::commit() {
     if (current_file.empty()) {
         cpersist_internal::ErrorManager::get().throwError("Can't commit changes while no file is open.");
     }
-    std::ofstream file(fullFilePath, std::ios::binary | std::ios::app); // write into <current_file>.<ext>, append if already exists
+    std::ofstream file(fullFilePath, std::ios::binary | std::ios::trunc); // write into <current_file>.<ext>, append if already exists
     
     if (!file) {
         cpersist_internal::ErrorManager::get().throwError("Unable to commit to file \"" + fullFilePath.string() + ".\"");
@@ -214,7 +234,7 @@ void SaveManager::commit() {
     }
 
     file.write(reinterpret_cast<const char*>(&encryption_enabled), sizeof(encryption_enabled));
-    
+
     const std::string data = files[current_file].str();
     std::vector<uint8_t> bytes(
         reinterpret_cast<const uint8_t*>(data.data()),

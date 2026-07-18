@@ -8,6 +8,7 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include "error_handler.h"
 
 
 class AES_GCM_Manager {
@@ -15,7 +16,8 @@ private:
     template<typename erType>
     void panic(const std::string& msg) {
         // i personally have my own error manager, so i refactored the error messages to this panic function.
-        throw erType("ENCRYPTION ERROR: \"" + msg + "\"");
+        // throw erType("ENCRYPTION ERROR: \"" + msg + "\"");
+        cpersist_internal::ErrorManager::get().throwError(msg); // fi shaghle khatai
     }
     AES_GCM_Manager() = default;
     ~AES_GCM_Manager() {

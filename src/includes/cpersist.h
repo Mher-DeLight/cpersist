@@ -138,14 +138,16 @@ public:
     uint64_t getDataPosition(const std::string& name, const bool loose = false);
     std::vector<uint8_t> readFileAsBinary(const std::string& filename);
     void writeBytesIntoFile(const char* bytes, const std::uint32_t size, const std::uint64_t position, const bool encrypt = true);
+    bool isFileEncrypted();
 
     // READING
     template<typename T>
-    T read(const std::string& name, std::optional<T> defaultValue = std::nullopt, const std::string& parent="") {
+    T read(const std::string& name, std::optional<T> defaultValue = std::nullopt, const std::string& parent = "") {
         if (current_file.empty()) {
             cpersist_internal::ErrorManager::get().throwError("Can't read data while no file is chosen.");
         }
-        std::string fullname = parent.empty()? name : parent + "." + name;
+
+        std::string fullname = parent.empty() ? name : parent + "." + name;
 
         if constexpr (cpersist::hasArchive<T>) {
             T object;
@@ -159,36 +161,45 @@ public:
             object.read(fullname);
             return object;
         }
-        
-        
+
         uint64_t dataPosition = getDataPosition(fullname);
-        
+
         if (dataPosition == static_cast<uint64_t>(-1)) {
-            if (defaultValue) {return *defaultValue;} // not found
-            cpersist_internal::ErrorManager::get().throwError("Entry \"" + std::string(parent.empty()? name : parent + "." + name) +"\" not found.");
+            if (defaultValue)
+                return *defaultValue;
+
+            cpersist_internal::ErrorManager::get().throwError("Entry \"" + fullname + "\" not found.");
         }
 
-        std::ifstream file(std::filesystem::path(folderName) / (current_file + fileExtension), std::ios::binary);
-        if (!file) {
-            cpersist_internal::ErrorManager::get().throwError("Can't read file " + current_file + fileExtension + "; it might be deleted or corrupted");
+        // data is already decrypted
+        std::vector<uint8_t> data = readFileAsBinary(current_file);
+
+        if (dataPosition + sizeof(uint32_t) > data.size()) {
+            cpersist_internal::ErrorManager::get().throwError(
+                "Corrupted save file.");
         }
 
-        file.seekg(dataPosition);
         uint32_t dataSize;
-        file.read(reinterpret_cast<char*>(&dataSize), sizeof(dataSize)); // read data size
+        std::memcpy(
+            &dataSize,
+            data.data() + dataPosition,
+            sizeof(dataSize)); // copy the data into memory so we can modify it freely
+        dataPosition += sizeof(uint32_t);
 
-        std::string buffer(dataSize, '\0'); // make a string of dataSize many characters, each of which is initially 00
-        file.read(buffer.data(), dataSize);
+        if (dataPosition + dataSize > data.size()) {
+            cpersist_internal::ErrorManager::get().throwError("Corrupted save file.");
+        }
 
-        std::stringstream dataStream(buffer);
+        std::stringstream stream(std::string(reinterpret_cast<char*>(data.data() + dataPosition), dataSize));
 
         T object;
-        cpersist::Serializer<T>::read(dataStream, object);
+        cpersist::Serializer<T>::read(stream, object);
+
         return object;
     }
     template<typename T>
-    void read_into(const std::string& name, T& result_into, std::optional<T> defaultValue = std::nullopt) {
-        result_into = read<T>(name, defaultValue);
+    void read_into(const std::string& name, T& result_into, std::optional<T> defaultValue = std::nullopt, const std::string& parent = "") {
+        result_into = read<T>(name, defaultValue, parent);
     }
     
     bool contains(const std::string& dataname);
