@@ -16,21 +16,15 @@ public:
 
 int main()
 {
-    std::vector<uint8_t> SECRET_KEY = {
-        0x6A, 0xD3, 0x91, 0x4F, 0xBE, 0x27, 0x58, 0xC2,
-        0x13, 0xE9, 0x74, 0xA0, 0x5D, 0x8B, 0x36, 0xF1,
-        0x92, 0x47, 0xCC, 0x1E, 0x65, 0xAB, 0xD8, 0x30,
-        0x7F, 0x14, 0xB5, 0xE2, 0x09, 0x6C, 0x83, 0xFA
-    };
-
-    encrMgr.setEncryptionKey(std::move(SECRET_KEY));
+    saveMgr.enable_encryption(true);
+    saveMgr.set_encryption_key("hellothere");
 
     saveMgr.open("myfile");
-    saveMgr.write("number", 3);
-    saveMgr.write("other_number", 5);
+    saveMgr.write("number", 1);
+    saveMgr.write("other_number", 2);
     saveMgr.commit();
 
-    // std::cout << "Number: " << saveMgr.read<int>("number") << " Other number: " << saveMgr.read<int>("other_number") << std::endl;
+    std::cout << "Number: " << saveMgr.read<int>("number") << " Other number: " << saveMgr.read<int>("other_number") << std::endl;
 
     return 0;
 }

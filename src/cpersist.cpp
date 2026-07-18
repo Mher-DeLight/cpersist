@@ -288,18 +288,46 @@ const std::string& SaveManager::get_file_extension() {
     return fileExtension;
 }
 
+
+
 // SETTERS
 void SaveManager::set_file_extension(const std::string& new_extension) {
     fileExtension = "." + new_extension;
 }
+void SaveManager::enable_encryption(const bool enable) {
+    encryption_enabled = enable;
+}
+void SaveManager::set_encryption_key(const std::string& key) {
+    encrMgr.setEncryptionKey(cpersist_internal::hashString(key));
+}
 
-uint64_t cpersist_internal::hashString(const std::string& s)  {
-    uint64_t hash = 14695981039346656037ull;
+std::vector<uint8_t> cpersist_internal::hashString(const std::string& str)
+{
+    constexpr uint64_t seeds[4] = {
+        0x243F6A8885A308D3ULL,
+        0x13198A2E03707344ULL,
+        0xA4093822299F31D0ULL,
+        0x082EFA98EC4E6C89ULL
+    };
 
-    for (unsigned char c : s) {
-        hash ^= c;
-        hash *= 1099511628211ull;
+    std::vector<uint8_t> key;
+    key.reserve(32);
+
+    for (uint64_t seed : seeds)
+    {
+        uint64_t h = seed;
+
+        for (unsigned char c : str)
+        {
+            h ^= c;
+            h *= 0x100000001B3ULL;      // FNV prime
+            h ^= h >> 32;
+            h *= 0x9E3779B185EBCA87ULL; // extra mixing
+        }
+
+        for (int i = 0; i < 8; ++i)
+            key.push_back(static_cast<uint8_t>(h >> (i * 8)));
     }
 
-    return hash;
+    return key;
 }

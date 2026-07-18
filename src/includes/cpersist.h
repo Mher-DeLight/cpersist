@@ -42,7 +42,7 @@ namespace cpersist {
         };
 }
 namespace cpersist_internal {
-    uint64_t hashString(const std::string& s);
+    std::vector<uint8_t> hashString(const std::string& s);
 }
 
 class SaveManager {
@@ -73,6 +73,19 @@ private:
     };
     ~SaveManager() = default;
     void init(const bool loadPresentFiles = true, std::optional<std::span<std::string>> initialFiles = std::nullopt);
+
+    std::vector<uint8_t> toBytes(uint64_t value) {
+        return {
+            static_cast<uint8_t>(value >> 56),
+            static_cast<uint8_t>(value >> 48),
+            static_cast<uint8_t>(value >> 40),
+            static_cast<uint8_t>(value >> 32),
+            static_cast<uint8_t>(value >> 24),
+            static_cast<uint8_t>(value >> 16),
+            static_cast<uint8_t>(value >> 8),
+            static_cast<uint8_t>(value)
+        };
+    }
 public:
     // === SINGLETON PROPERTIES
     SaveManager(const SaveManager&) = delete;
@@ -225,6 +238,8 @@ public:
 
     // SETTERS
     void set_file_extension(const std::string& new_extension);
+    void enable_encryption(const bool enable);
+    void set_encryption_key(const std::string& key);
 };
 
 inline SaveManager& saveMgr = SaveManager::get();
