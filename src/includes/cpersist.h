@@ -17,6 +17,7 @@
 #include "serializer.h"
 #include "aes.h"
 
+
 class WriteArchive;
 class ReadArchive; // forward declaration so we can use them in hasArchive
 
@@ -46,8 +47,17 @@ namespace cpersist_internal {
 
 class SaveManager {
 private:
+    class Field {
+    public:
+        Field(const std::string& fieldname, std::vector<uint8_t>& fieldvalue):
+            name(fieldname), value(fieldvalue) {}
+
+        std::string name;
+        std::vector<uint8_t> value;
+    };
+
     std::string current_file;
-    std::unordered_map<std::string, std::stringstream> files;
+    std::unordered_map<std::string, std::vector<Field>> files;
     bool debugMode = true;
     void debugLog(const std::string& message) {
         if (!debugMode) {return;}
@@ -116,7 +126,8 @@ public:
             cpersist_internal::ErrorManager::get().throwError("Serialization failed.");
         }
 
-        std::string serialized = dataStream.str();
+        std::string dataString = dataStream.str();
+        std::vector<uint8_t> serialized(dataString.begin(),dataString.end());
         uint32_t dataSize = serialized.size();
         uint8_t nameSize = fullname.size();
 
@@ -129,11 +140,8 @@ public:
             }
         }
 
-        std::stringstream& file = files[current_file];
-        file.write(reinterpret_cast<const char*>(&nameSize), sizeof(uint8_t));
-        file.write(fullname.data(), nameSize);  // write the name
-        file.write(reinterpret_cast<const char*>(&dataSize), sizeof(dataSize)); // then write the data size
-        file.write(reinterpret_cast<const char*>(serialized.data()), serialized.size());    // then write the data
+        Field field(fullname.data(), serialized);
+        files[current_file].push_back(field);
     };
     uint64_t getDataPosition(const std::string& name, const bool loose = false);
     std::vector<uint8_t> readFileAsBinary(const std::string& filename);

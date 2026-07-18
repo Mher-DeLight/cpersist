@@ -69,7 +69,7 @@ bool SaveManager::create_new_file(const std::string& new_file) {
         return false; // file already exists
     }
     
-    files.emplace(new_file, std::stringstream{});
+    files.try_emplace(new_file);
     return true;
 }
 bool SaveManager::open(const std::string& filename) {
@@ -235,11 +235,29 @@ void SaveManager::commit() {
 
     file.write(reinterpret_cast<const char*>(&encryption_enabled), sizeof(encryption_enabled));
 
-    const std::string data = files[current_file].str();
-    std::vector<uint8_t> bytes(
-        reinterpret_cast<const uint8_t*>(data.data()),
-        reinterpret_cast<const uint8_t*>(data.data()) + data.size()
-    );
+    std::vector<uint8_t> bytes;
+    std::vector<Field> fields = files[current_file];
+    for (auto& field : fields) {
+        bytes.push_back(field.name.size());
+        for (auto& c : field.name) {
+            bytes.push_back(c);
+        }
+
+        uint32_t valueSize = static_cast<uint32_t>(field.value.size());
+        std::vector<std::uint8_t> valueSizeVector = {
+            static_cast<std::uint8_t>((valueSize      ) & 0xFF),
+            static_cast<std::uint8_t>((valueSize >> 8 ) & 0xFF),
+            static_cast<std::uint8_t>((valueSize >> 16) & 0xFF),
+            static_cast<std::uint8_t>((valueSize >> 24) & 0xFF)
+        };
+        for (auto byt : valueSizeVector) {
+            bytes.push_back(byt);
+        }
+        
+        for (auto& vl : field.value) {
+            bytes.push_back(vl);
+        }
+    }
 
     if (encryption_enabled) {
         bytes = encrMgr.encrypt(bytes);

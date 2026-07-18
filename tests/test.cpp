@@ -4,6 +4,16 @@
 // TODO: fix writeBytesIntoFile
 // TODO: fix whatever the fuck is wrong with read
 
+class myclass {
+public:
+    int number;
+
+    template<typename Archive>
+    void archive(Archive& ar) {
+        ar("number", number);
+    }
+};
+
 int main()
 {
     std::vector<uint8_t> SECRET_KEY = {
@@ -20,7 +30,7 @@ int main()
     saveMgr.write("other_number", 5);
     saveMgr.commit();
 
-    std::cout << "Number: " << saveMgr.read<int>("number") << " Other number: " << saveMgr.read<int>("other_number") << std::endl;
+    // std::cout << "Number: " << saveMgr.read<int>("number") << " Other number: " << saveMgr.read<int>("other_number") << std::endl;
 
     return 0;
 }
