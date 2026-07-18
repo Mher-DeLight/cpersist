@@ -206,10 +206,29 @@ void SaveManager::commit() {
     if (current_file.empty()) {
         cpersist_internal::ErrorManager::get().throwError("Can't commit changes while no file is open.");
     }
-    std::ofstream file(fullFilePath, std::ios::app); // write into <current_file>.<ext>, append if already exists
-    if (file.is_open()) {
-        file << files[current_file].rdbuf();
+    std::ofstream file(fullFilePath, std::ios::binary | std::ios::app); // write into <current_file>.<ext>, append if already exists
+    
+    if (!file) {
+        cpersist_internal::ErrorManager::get().throwError("Unable to commit to file \"" + fullFilePath.string() + ".\"");
+        return;
     }
+
+    file.write(reinterpret_cast<const char*>(&encryption_enabled), sizeof(encryption_enabled));
+    
+    const std::string data = files[current_file].str();
+    std::vector<uint8_t> bytes(
+        reinterpret_cast<const uint8_t*>(data.data()),
+        reinterpret_cast<const uint8_t*>(data.data()) + data.size()
+    );
+
+    if (encryption_enabled) {
+        bytes = encrMgr.encrypt(bytes);
+    }
+
+    file.write(
+        reinterpret_cast<const char*>(bytes.data()),
+        static_cast<std::streamsize>(bytes.size())
+    );
 }
 
 // LOGGERS

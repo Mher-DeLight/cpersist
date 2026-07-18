@@ -117,34 +117,23 @@ public:
         }
 
         std::string serialized = dataStream.str();
-
-        std::vector<uint8_t> bytes(
-            reinterpret_cast<const uint8_t*>(serialized.data()),
-            reinterpret_cast<const uint8_t*>(serialized.data()) + serialized.size()
-        );
-
-        std::vector<uint8_t> serializedData =
-            encryption_enabled
-                ? encrMgr.encrypt(bytes)
-                : std::move(bytes);
-        
-        uint32_t dataSize = serializedData.size();
+        uint32_t dataSize = serialized.size();
         uint8_t nameSize = fullname.size();
 
         
         if (file_exists(current_file)) {
             uint64_t dataPosition = getDataPosition(fullname);
             if (dataPosition != -1) { // data exists. modify it.
-                writeBytesIntoFile(reinterpret_cast<const char*>(serializedData.data()), dataSize, dataPosition);
+                writeBytesIntoFile(reinterpret_cast<const char*>(serialized.data()), dataSize, dataPosition);
                 return; // already modified existing entry; don't append a new one
             }
         }
 
         std::stringstream& file = files[current_file];
         file.write(reinterpret_cast<const char*>(&nameSize), sizeof(uint8_t));
-        file.write(fullname.data(), nameSize);  // write the name hash, always 8 bytes thanks to hashing
+        file.write(fullname.data(), nameSize);  // write the name
         file.write(reinterpret_cast<const char*>(&dataSize), sizeof(dataSize)); // then write the data size
-        file.write(reinterpret_cast<const char*>(serializedData.data()), serializedData.size());    // then write the data
+        file.write(reinterpret_cast<const char*>(serialized.data()), serialized.size());    // then write the data
     };
     uint64_t getDataPosition(const std::string& name, const bool loose = false);
     std::vector<uint8_t> readFileAsBinary(const std::string& filename);
