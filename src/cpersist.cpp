@@ -2,18 +2,13 @@
 #include "includes/cpersist.h"
 #include <algorithm>
 
-void SaveManager::init(const bool loadPresentFiles, std::optional<std::span<std::string>> initialFiles) {
+void SaveManager::init() {
     std::filesystem::create_directory(folderName); // creates the folder if it doesn't exist
     
-    if (loadPresentFiles) {
-        loadExistingFiles();
-    }
+    loadExistingFiles();
 
-    if (initialFiles) {
-        for (const std::string& inf : *initialFiles) {
-            if (file_exists(inf)) {continue;}
-            else {create_new_file(inf);}
-        }
+    for (auto& pair : files) {
+        files[pair.first] = parseFile(pair.first); // load already written data so truncate doesn't overwrite it
     }
 }
 void SaveManager::loadExistingFiles() {
@@ -53,10 +48,10 @@ bool SaveManager::change_file(const std::string& new_file) {
 }
 void SaveManager::change_file_safe(const std::string& new_file) {
     current_file = new_file; // currently not present, but will be inserted later
-    fullFilePath = std::filesystem::path(folderName) / (current_file + fileExtension);
     if (!filename_fits_standards(current_file)) {
         make_filename_safe(current_file);
     }
+    fullFilePath = std::filesystem::path(folderName) / (current_file + fileExtension);
     
     if (!files.count(current_file)) {
         files.try_emplace(current_file);
@@ -74,8 +69,8 @@ bool SaveManager::create_new_file(const std::string& new_file) {
 }
 bool SaveManager::open(const std::string& filename) {
     if (!filename_fits_standards(filename)) {return false;} // doesn't fit naming standards
-    if (!files.count(current_file)) { // file doesn't exist, create it
-        files.try_emplace(current_file);
+    if (!files.count(filename)) { // file doesn't exist, create it
+        files.try_emplace(filename);
     }
 
     current_file = filename;
@@ -153,7 +148,7 @@ uint64_t SaveManager::getDataPosition(const std::string& name, const bool loose)
     return -1;
 }
 std::vector<uint8_t> SaveManager::readFileAsBinary(const std::string& filename) {
-    bool fileEncr = isFileEncrypted();
+    bool fileEncr = isFileEncrypted(filename);
     std::filesystem::path customFilePath = std::filesystem::path(folderName) / (filename + fileExtension);
     std::ifstream file(customFilePath, std::ios::binary);
 
@@ -180,10 +175,23 @@ std::vector<uint8_t> SaveManager::readFileAsBinary(const std::string& filename) 
     return bytes;
 }
 bool SaveManager::contains(const std::string& dataname) {
-    return getDataPosition(dataname, true) != -1;
+    auto fileIt = files.find(current_file);
+    if (fileIt == files.end()) {
+        cpersist_internal::ErrorManager::get().throwError("Current file is not loaded.");
+    }
+
+    const auto& fields = fileIt->second;
+
+    auto fieldIt = std::find_if(fields.begin(), fields.end(),
+        [&](const Field& field) {
+            return field.name == dataname;
+        });
+
+    return fieldIt != fields.end();
 }
-bool SaveManager::isFileEncrypted() {
-    std::ifstream file(fullFilePath, std::ios::binary);
+bool SaveManager::isFileEncrypted(const std::string& filename) {
+    std::string curFp = filename.empty()? fullFilePath : (std::filesystem::path(folderName) / (filename + fileExtension));
+    std::ifstream file(curFp, std::ios::binary);
 
     if (!file) {
         cpersist_internal::ErrorManager::get().throwError("Failed to open file: " + current_file);
@@ -195,6 +203,69 @@ bool SaveManager::isFileEncrypted() {
     }
 
     return encryptionMagicByte != 0x00;
+}
+std::vector<Field> SaveManager::parseFile(const std::string& filename) {
+    if (!file_exists(filename)) {
+        cpersist_internal::ErrorManager::get().throwError("Cannot parse file \"" + filename + fileExtension + "\"; it is either \
+            deleted, corrupted, or not loaded into the buffer.");
+    }
+
+    if (isFileEncrypted(filename) && encrMgr.encryKeyEmpty()) {
+        return std::vector<Field>();
+    }
+
+    std::vector<uint8_t> data = readFileAsBinary(filename);
+    
+    std::vector<Field> fields;
+    uint64_t position = 0;
+    while (position < data.size()) {
+        // ===== NAME
+        // check bounds
+        if (position + sizeof(uint8_t) > data.size()) {
+            cpersist_internal::ErrorManager::get().throwError("file " + filename + fileExtension + " is incorrectly formatted");
+        }
+
+        uint8_t nameSize;
+        std::memcpy(&nameSize, data.data() + position, sizeof(nameSize));
+        position += sizeof(nameSize);
+
+
+        // ===== NAME
+        // check bounds
+        if (position + nameSize > data.size()) {
+            cpersist_internal::ErrorManager::get().throwError("file " + filename + fileExtension + " is incorrectly formatted");
+        }
+
+        std::string currentName(
+            reinterpret_cast<const char*>(data.data() + position),
+            nameSize
+        );
+        position += nameSize;
+
+        // ===== DATASIZE
+        if (position + sizeof(uint32_t) > data.size()) {
+            cpersist_internal::ErrorManager::get().throwError("file " + filename + fileExtension + " is incorrectly formatted");
+        }
+
+        uint32_t dataSize;
+        std::memcpy(&dataSize, data.data() + position, sizeof(dataSize));
+        position += sizeof(dataSize);
+
+        // the position now points at the data itself
+        if (position + dataSize > data.size()) {
+            cpersist_internal::ErrorManager::get().throwError("file " + filename + fileExtension + " is incorrectly formatted");
+        }
+
+        // copy the data into a new vector
+        std::vector<uint8_t> fieldData(data.begin() + position,data.begin() + position + dataSize);
+
+        // construct and store the field. we'll use emplace to avoid making a temporary Field object
+        fields.emplace_back(currentName, fieldData);
+
+        // Move to the next field
+        position += dataSize;
+    }
+    return fields;
 }
 
 // COMMIT
@@ -275,6 +346,7 @@ void SaveManager::enable_encryption(const bool enable) {
 }
 void SaveManager::set_encryption_key(const std::string& key) {
     encrMgr.setEncryptionKey(cpersist_internal::hashString(key));
+    init(); // reinit to parse existing files into the buffer
 }
 
 std::vector<uint8_t> cpersist_internal::hashString(const std::string& str)

@@ -5,6 +5,7 @@
 #include <sstream>
 #include <ostream>
 #include <cstring>
+#include <algorithm>
 #include <cstdint>
 #include <vector>
 #include <iostream>
@@ -45,16 +46,18 @@ namespace cpersist_internal {
     std::vector<uint8_t> hashString(const std::string& s);
 }
 
+class Field {
+public:
+    Field(const std::string& fieldname, std::vector<uint8_t>& fieldvalue):
+        name(fieldname), value(fieldvalue) {}
+
+    std::string name;
+    std::vector<uint8_t> value;
+};
+
+
 class SaveManager {
 private:
-    class Field {
-    public:
-        Field(const std::string& fieldname, std::vector<uint8_t>& fieldvalue):
-            name(fieldname), value(fieldvalue) {}
-
-        std::string name;
-        std::vector<uint8_t> value;
-    };
 
     std::string current_file;
     std::unordered_map<std::string, std::vector<Field>> files;
@@ -67,13 +70,13 @@ private:
     std::string folderName = "savedata";
     std::filesystem::path fullFilePath;
     bool encryption_enabled = true;
+    std::vector<Field> parseFile(const std::string& filename);
 
     SaveManager() {
-        init(true);
+        init();
     };
     ~SaveManager() = default;
-    void init(const bool loadPresentFiles = true, std::optional<std::span<std::string>> initialFiles = std::nullopt);
-
+    
     std::vector<uint8_t> toBytes(uint64_t value) {
         return {
             static_cast<uint8_t>(value >> 56),
@@ -87,6 +90,7 @@ private:
         };
     }
 public:
+    void init();
     // === SINGLETON PROPERTIES
     SaveManager(const SaveManager&) = delete;
     SaveManager& operator=(const SaveManager&) = delete;
@@ -146,7 +150,7 @@ public:
 
         
         if (file_exists(current_file)) {
-            for (auto fd : files[current_file]) {
+            for (auto& fd : files[current_file]) {
                 if (fd.name == fullname) {
                     fd.value = serialized;
                     return;
@@ -159,7 +163,7 @@ public:
     };
     uint64_t getDataPosition(const std::string& name, const bool loose = false);
     std::vector<uint8_t> readFileAsBinary(const std::string& filename);
-    bool isFileEncrypted();
+    bool isFileEncrypted(const std::string& filename = "");
 
     // READING
     template<typename T>
@@ -183,39 +187,33 @@ public:
             return object;
         }
 
-        uint64_t dataPosition = getDataPosition(fullname);
+        auto fileIt = files.find(current_file);
+        if (fileIt == files.end()) {
+            cpersist_internal::ErrorManager::get().throwError("Current file is not loaded.");
+        }
 
-        if (dataPosition == static_cast<uint64_t>(-1)) {
+        const auto& fields = fileIt->second;
+
+        auto fieldIt = std::find_if(fields.begin(), fields.end(),
+            [&](const Field& field) {
+                return field.name == fullname;
+            });
+
+        if (fieldIt == fields.end()) {
             if (defaultValue)
                 return *defaultValue;
 
             cpersist_internal::ErrorManager::get().throwError("Entry \"" + fullname + "\" not found.");
         }
 
-        // data is already decrypted
-        std::vector<uint8_t> data = readFileAsBinary(current_file);
-
-        if (dataPosition + sizeof(uint32_t) > data.size()) {
-            cpersist_internal::ErrorManager::get().throwError(
-                "Corrupted save file.");
-        }
-
-        uint32_t dataSize;
-        std::memcpy(
-            &dataSize,
-            data.data() + dataPosition,
-            sizeof(dataSize)); // copy the data into memory so we can modify it freely
-        dataPosition += sizeof(uint32_t);
-
-        if (dataPosition + dataSize > data.size()) {
-            cpersist_internal::ErrorManager::get().throwError("Corrupted save file.");
-        }
-
-        std::stringstream stream(std::string(reinterpret_cast<char*>(data.data() + dataPosition), dataSize));
+        std::stringstream stream(
+            std::string(
+                reinterpret_cast<const char*>(fieldIt->value.data()),
+                fieldIt->value.size()),
+            std::ios::binary | std::ios::in);
 
         T object;
         cpersist::Serializer<T>::read(stream, object);
-
         return object;
     }
     template<typename T>

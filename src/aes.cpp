@@ -99,6 +99,9 @@ std::vector<uint8_t> AES_GCM_Manager::encrypt(const std::vector<uint8_t>& bytes)
     return output;
 }
 
+bool AES_GCM_Manager::encryKeyEmpty() {
+    return encrKey.empty();
+}
 
 std::vector<uint8_t> AES_GCM_Manager::decrypt(const std::vector<uint8_t>& bytes) {
     if (encrKey.size() != 16 && encrKey.size() != 24 && encrKey.size() != 32) {

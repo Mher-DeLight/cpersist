@@ -40,6 +40,7 @@ public:
 
     using CtxPtr = std::unique_ptr<EVP_CIPHER_CTX, decltype(&EVP_CIPHER_CTX_free)>;
     void setEncryptionKey(const std::vector<uint8_t>& key);
+    bool encryKeyEmpty();
 
     std::vector<uint8_t> encrypt(const std::vector<uint8_t>& bytes);
     std::vector<uint8_t> decrypt(const std::vector<uint8_t>& bytes);
