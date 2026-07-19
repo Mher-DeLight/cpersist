@@ -1,11 +1,13 @@
 #include <iostream>
 #include <cpersist.h>
 
+
 int main () {
-    saveMgr.enable_encryption(true);
-    saveMgr.set_encryption_key("@a_5q^mdfi&jidad]a]kmfdg");
+    saveMgr.enable_encryption(false);
 
     saveMgr.open("myfile");
-    saveMgr.write("number", 3);
-    saveMgr.commit();
+    int number = 0;
+    saveMgr.link("number", number);
+    number = 5;
+    saveMgr.commit(); // should write 5
 }

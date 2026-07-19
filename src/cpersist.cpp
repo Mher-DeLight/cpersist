@@ -188,8 +188,8 @@ bool SaveManager::contains(const std::string& dataname, const bool loose) {
     const auto& fields = fileIt->second;
 
     auto fieldIt = std::find_if(fields.begin(), fields.end(),
-        [&](const ValField& field) {
-            return (field.name == dataname) || (field.name.starts_with(dataname + ".") && loose);
+        [&](const std::unique_ptr<Field>& field) {
+            return (field->name == dataname) || (field->name.starts_with(dataname + ".") && loose);
         });
 
     return fieldIt != fields.end();
@@ -204,8 +204,8 @@ bool SaveManager::contains(const std::initializer_list<std::string>& datanames, 
 
     for (const auto& dataname : datanames) {
         auto fieldIt = std::find_if(fields.begin(), fields.end(),
-            [&](const ValField& field) {
-                return (field.name == dataname) || (field.name.starts_with(dataname + ".") && loose);
+            [&](const std::unique_ptr<Field>& field) {
+                return (field->name == dataname) || (field->name.starts_with(dataname + ".") && loose);
             });
 
         if (fieldIt == fields.end()) {
@@ -220,29 +220,29 @@ bool SaveManager::isFileEncrypted(const std::string& filename) {
     std::ifstream file(curFp, std::ios::binary);
 
     if (!file) {
-        cpersist_internal::ErrorManager::get().throwError("Failed to open file: " + current_file);
+        cpersist_internal::ErrorManager::get().throwError("Failed to open file \"" + (filename.empty()? current_file : filename) + "\"");
     }
 
     uint8_t encryptionMagicByte;
     if (!file.read(reinterpret_cast<char*>(&encryptionMagicByte), 1)) {
-        cpersist_internal::ErrorManager::get().throwError("Cannot read data file " + current_file);
+        cpersist_internal::ErrorManager::get().throwError("Cannot read data file \"" + (filename.empty()? current_file : filename) + "\"");
     }
 
     return encryptionMagicByte != 0x00;
 }
-std::vector<ValField> SaveManager::readFile(const std::string& filename) {
+std::vector<std::unique_ptr<Field>> SaveManager::readFile(const std::string& filename) {
     if (!file_exists(filename)) {
         cpersist_internal::ErrorManager::get().throwError("Cannot parse file \"" + filename + fileExtension + "\"; it is either \
             deleted, corrupted, or not loaded into the buffer.");
     }
 
     if (isFileEncrypted(filename) && encrMgr.encryKeyEmpty()) {
-        return std::vector<ValField>();
+        return {};
     }
 
     std::vector<uint8_t> data = readFileAsBinary(filename);
     
-    std::vector<ValField> fields;
+    std::vector<std::unique_ptr<Field>> fields;
     uint64_t position = 0;
     while (position < data.size()) {
         // ===== NAME
@@ -286,12 +286,12 @@ std::vector<ValField> SaveManager::readFile(const std::string& filename) {
         std::vector<uint8_t> fieldData(data.begin() + position,data.begin() + position + dataSize);
 
         // construct and store the field. we'll use emplace to avoid making a temporary ValField object
-        fields.emplace_back(currentName, fieldData);
+        fields.push_back(std::make_unique<ValField>(currentName, fieldData));
 
         // Move to the next field
         position += dataSize;
     }
-    return fields;
+    return std::move(fields);
 }
 
 // COMMIT
@@ -309,27 +309,9 @@ void SaveManager::commit() {
     file.write(reinterpret_cast<const char*>(&encryption_enabled), sizeof(encryption_enabled));
 
     std::vector<uint8_t> bytes;
-    std::vector<ValField> fields = files[current_file];
+    std::vector<std::unique_ptr<Field>> fields = std::move(files[current_file]);
     for (auto& field : fields) {
-        bytes.push_back(field.name.size());
-        for (auto& c : field.name) {
-            bytes.push_back(c);
-        }
-
-        uint32_t valueSize = static_cast<uint32_t>(field.value.size());
-        std::vector<std::uint8_t> valueSizeVector = {
-            static_cast<std::uint8_t>((valueSize      ) & 0xFF),
-            static_cast<std::uint8_t>((valueSize >> 8 ) & 0xFF),
-            static_cast<std::uint8_t>((valueSize >> 16) & 0xFF),
-            static_cast<std::uint8_t>((valueSize >> 24) & 0xFF)
-        };
-        for (auto byt : valueSizeVector) {
-            bytes.push_back(byt);
-        }
-        
-        for (auto& vl : field.value) {
-            bytes.push_back(vl);
-        }
+        field->commit(bytes);
     }
 
     if (encryption_enabled) {
@@ -340,6 +322,8 @@ void SaveManager::commit() {
         reinterpret_cast<const char*>(bytes.data()),
         static_cast<std::streamsize>(bytes.size())
     );
+
+    files[current_file] = std::move(fields);
 }
 
 // LOGGERS

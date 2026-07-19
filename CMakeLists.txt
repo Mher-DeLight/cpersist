@@ -8,10 +8,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 
-set(CMAKE_BUILD_TYPE MinSizeRel CACHE STRING "Build for minimum size" FORCE)
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Os -ffunction-sections -fdata-sections")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Os -ffunction-sections -fdata-sections")
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--gc-sections")
+# set(CMAKE_BUILD_TYPE MinSizeRel CACHE STRING "Build for minimum size" FORCE)
+# set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Os -ffunction-sections -fdata-sections")
+# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Os -ffunction-sections -fdata-sections")
+# set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--gc-sections")
 
 add_library(cpersist src/includes/cpersist.h src/cpersist.cpp src/includes/error_handler.h src/error_handler.cpp src/includes/serializer.h src/aes.cpp src/includes/aes.h)
 target_compile_options(cpersist PRIVATE -O0 -g)

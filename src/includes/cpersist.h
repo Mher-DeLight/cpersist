@@ -14,13 +14,13 @@
 #include <fstream>  
 #include <span>
 #include <initializer_list>
+#include <memory>
 #include "error_handler.h"
 #include "serializer.h"
 #include "aes.h"
 
-
+class ReadArchive;
 class WriteArchive;
-class ReadArchive; // forward declaration so we can use them in hasArchive
 
 namespace cpersist {
     template<typename T>
@@ -42,6 +42,62 @@ namespace cpersist {
             t.archive(rar);
         };
 }
+
+class Archive {
+protected: // we don't want others to access it, only it and its children
+    std::string parent;
+
+public:
+    explicit Archive(std::string parent)
+        : parent(std::move(parent)) {}
+};
+
+class ByteArchive : public Archive {
+public:
+    using Archive::Archive;
+
+    std::vector<uint8_t> bytes;
+
+    template<typename T>
+    void operator()(const std::string& key, T& value) {
+        std::stringstream dataStream(std::ios::in | std::ios::out | std::ios::binary);
+        std::string fullname = parent.empty() ? key : parent + "." + key;
+
+        if constexpr (cpersist::hasArchive<T>) {
+            ByteArchive ba(fullname);
+            value.archive(ba);
+            for (auto& byte : ba.bytes) {
+                bytes.push_back(byte);
+            }
+            return;
+        }
+
+        cpersist::Serializer<T>::write(dataStream, value);
+        std::string data = dataStream.str();
+
+
+        bytes.push_back(static_cast<uint8_t>(fullname.size()));
+        for (auto& c : fullname) {
+            bytes.push_back(c);
+        }
+
+        uint32_t dataSize = static_cast<uint32_t>(data.size());
+        std::vector<std::uint8_t> dataSizeVector = {
+            static_cast<std::uint8_t>((dataSize      ) & 0xFF),
+            static_cast<std::uint8_t>((dataSize >> 8 ) & 0xFF),
+            static_cast<std::uint8_t>((dataSize >> 16) & 0xFF),
+            static_cast<std::uint8_t>((dataSize >> 24) & 0xFF)
+        };
+        for (auto byt : dataSizeVector) {
+            bytes.push_back(byt);
+        }
+        bytes.insert(bytes.end(), data.begin(), data.end());
+
+    }
+};
+
+
+
 namespace cpersist_internal {
     std::vector<uint8_t> hashString(const std::string& s);
 }
@@ -49,51 +105,79 @@ namespace cpersist_internal {
 class Field {
 public:
     virtual ~Field() = default;
+    virtual void commit(std::vector<uint8_t>& bytes) = 0;
+    std::string name;
+
+    Field(const std::string& fieldname):
+        name(fieldname) {}
 };
 class ValField : public Field {
 public:
-    ValField(const std::string& fieldname, std::vector<uint8_t>& fieldvalue):
-        name(fieldname), value(fieldvalue) {}
+    ValField(const std::string& fieldname, std::vector<uint8_t> fieldvalue):
+        Field(fieldname), value(std::move(fieldvalue)) {}
 
-    std::string name;
     std::vector<uint8_t> value;
-};
+    
+    void commit(std::vector<uint8_t>& bytes) override {
+        bytes.push_back(name.size());
+        for (auto& c : name) {
+            bytes.push_back(c);
+        }
 
+        uint32_t valueSize = static_cast<uint32_t>(value.size());
+        std::vector<std::uint8_t> valueSizeVector = {
+            static_cast<std::uint8_t>((valueSize      ) & 0xFF),
+            static_cast<std::uint8_t>((valueSize >> 8 ) & 0xFF),
+            static_cast<std::uint8_t>((valueSize >> 16) & 0xFF),
+            static_cast<std::uint8_t>((valueSize >> 24) & 0xFF)
+        };
+        for (auto byt : valueSizeVector) {
+            bytes.push_back(byt);
+        }
+        
+        for (auto& vl : value) {
+            bytes.push_back(vl);
+        }
+    }
+};
 template<typename T>
 class RefField : public Field {
 public:
     RefField(const std::string& fieldname, T& obj):
-        name(fieldname), object(obj) {}
+        Field(fieldname), object(obj) {}
 
-    std::string name;
     T& object;
+    void commit(std::vector<uint8_t>& bytes) override {
+        ByteArchive ba("");
+        ba(name, object);
+        bytes.insert(bytes.end(), ba.bytes.begin(), ba.bytes.end());
+        return;
+    }
 };
 
 
 class SaveManager {
 private:
+    template <typename T>
+    using uq = std::unique_ptr<T>;
+
 
     std::string current_file;
-    std::unordered_map<std::string, std::vector<ValField>> files;
+    std::unordered_map<std::string, std::vector<uq<Field>>> files;
+    std::string fileExtension = ".bin";
+    std::string folderName = "savedata";
+    std::filesystem::path fullFilePath;
+    std::vector<uq<Field>> readFile(const std::string& filename);
+    
+    bool debugMode = true;
+    bool encryption_enabled = true;
+    bool commitOnDestroy = false;
+    
+       
     void debugLog(const std::string& message) {
         if (!debugMode) {return;}
         std::cout << "[CPERSIST LOG] " << message << std::endl;
     }
-    std::string fileExtension = ".bin";
-    std::string folderName = "savedata";
-    std::filesystem::path fullFilePath;
-    std::vector<ValField> readFile(const std::string& filename);
-    
-    SaveManager() {
-        init();
-    };
-    ~SaveManager() {
-        if (commitOnDestroy) {
-            try {
-                commit();
-            } catch (...) {}
-        }
-    };
     
     std::vector<uint8_t> toBytes(uint64_t value) {
         return {
@@ -109,9 +193,16 @@ private:
     }
 
 
-    bool debugMode = true;
-    bool encryption_enabled = true;
-    bool commitOnDestroy = false;
+    SaveManager() {
+        init();
+    };
+    ~SaveManager() {
+        if (commitOnDestroy) {
+            try {
+                commit();
+            } catch (...) {}
+        }
+    };
 public:
     void init();
     // === SINGLETON PROPERTIES
@@ -175,15 +266,19 @@ public:
         
         if (file_exists(current_file)) {
             for (auto& fd : files[current_file]) {
-                if (fd.name == fullname) {
-                    fd.value = serialized;
+                if (fd->name == fullname) {
+                    if (auto* vF = dynamic_cast<ValField*>(fd.get())) {
+                        vF->value = serialized;
+                    } else {
+                        cpersist_internal::ErrorManager::get().throwError("cannot overwrite Reference Field object");
+                    }
                     return;
                 }
             }
         }
 
-        ValField field(fullname.data(), serialized);
-        files[current_file].push_back(field);
+        auto field = std::make_unique<ValField>(fullname.data(), serialized);
+        files[current_file].push_back(std::move(field));
     };
     uint64_t getDataPosition(const std::string& name, const bool loose = false);
     std::vector<uint8_t> readFileAsBinary(const std::string& filename);
@@ -196,6 +291,12 @@ public:
         } else {
             write(name, value);
         }
+    }
+
+    template<typename T>
+    void link(const std::string& name, T& object, const std::string& parent = "") {
+        auto fd = std::make_unique<RefField<T>>(parent.empty()? name : parent + "." + name, object);
+        files[current_file].push_back(std::move(fd));
     }
 
     // READING
@@ -228,8 +329,8 @@ public:
         const auto& fields = fileIt->second;
 
         auto fieldIt = std::find_if(fields.begin(), fields.end(),
-            [&](const ValField& field) {
-                return field.name == fullname;
+            [&](const uq<Field>& field) {
+                return field->name == fullname;
             });
 
         if (fieldIt == fields.end()) {
@@ -239,12 +340,17 @@ public:
             cpersist_internal::ErrorManager::get().throwError("Entry \"" + fullname + "\" not found.");
         }
 
-        std::stringstream stream(
-            std::string(
-                reinterpret_cast<const char*>(fieldIt->value.data()),
-                fieldIt->value.size()),
-            std::ios::binary | std::ios::in);
+        std::stringstream stream(std::ios::binary | std::ios::in);
+        if (auto* valueField = dynamic_cast<ValField*>(fieldIt->get())) {
+            stream.write(reinterpret_cast<const char*>(valueField->value.data()), static_cast<std::streamsize>(valueField->value.size()));
+        } else if (auto* refField = dynamic_cast<RefField<T>*>(fieldIt->get())) {
+            cpersist::Serializer<T>::write(stream, refField->object);
+        } else {
+            cpersist_internal::ErrorManager::get().throwError("unidentified field derivative class, cannot read");
+        }
+        stream.seekg(0);
 
+        
         T object;
         cpersist::Serializer<T>::read(stream, object);
         return object;
@@ -281,24 +387,12 @@ public:
 
 inline SaveManager& saveMgr = SaveManager::get();
 
-// ARCHIVES
-
-class Archive {
-protected: // we don't want others to access it, only it and its children
-    std::string parent;
-
-public:
-    explicit Archive(std::string parent)
-        : parent(std::move(parent)) {}
-};
-
 class WriteArchive : public Archive {
 public:
     using Archive::Archive; // inherit the constructors too
 
     template<typename T>
-    void operator()(const std::string& key, T& value)
-    {
+    void operator()(const std::string& key, T& value) {
         saveMgr.write(key, value, parent);
     }
 };
@@ -308,8 +402,7 @@ public:
     using Archive::Archive;
 
     template<typename T>
-    void operator()(const std::string& key, T& value)
-    {
+    void operator()(const std::string& key, T& value) {
         value = saveMgr.read<T>(key, std::nullopt, parent);
     }
 };
