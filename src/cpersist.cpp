@@ -30,7 +30,12 @@ void SaveManager::make_filename_safe(std::string& filename) {
     std::replace(filename.begin(), filename.end(), ' ', '_');
 }
 bool SaveManager::file_exists(const std::string& filename) {
-    if (files.contains(filename)) {
+    return files.contains(filename);
+}
+bool SaveManager::file_exists_on_disk(const std::string& filename) {
+    std::filesystem::path fp = std::filesystem::path(folderName) / (filename + fileExtension); 
+    
+    if (std::filesystem::exists(fp) && std::filesystem::is_regular_file(fp)) {
         return true;
     } else {
         return false;

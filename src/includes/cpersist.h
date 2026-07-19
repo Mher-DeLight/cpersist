@@ -112,6 +112,7 @@ public:
     void change_file_safe(const std::string& new_file);        // creates file if it doesn't exist, then moves to it in either case
     bool create_new_file(const std::string& new_file);         // creates a new file
     bool file_exists(const std::string& filename);
+    bool file_exists_on_disk(const std::string& filename);
     bool open(const std::string& filename);
     void ensure_exists(std::initializer_list<std::string> filenames);
     void ensure_exists(std::vector<std::string> filenames);
