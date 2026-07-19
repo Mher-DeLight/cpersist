@@ -61,7 +61,6 @@ private:
 
     std::string current_file;
     std::unordered_map<std::string, std::vector<Field>> files;
-    bool debugMode = true;
     void debugLog(const std::string& message) {
         if (!debugMode) {return;}
         std::cout << "[CPERSIST LOG] " << message << std::endl;
@@ -69,13 +68,18 @@ private:
     std::string fileExtension = ".bin";
     std::string folderName = "savedata";
     std::filesystem::path fullFilePath;
-    bool encryption_enabled = true;
     std::vector<Field> parseFile(const std::string& filename);
-
+    
     SaveManager() {
         init();
     };
-    ~SaveManager() = default;
+    ~SaveManager() {
+        if (commitOnDestroy) {
+            try {
+                commit();
+            } catch (...) {}
+        }
+    };
     
     std::vector<uint8_t> toBytes(uint64_t value) {
         return {
@@ -89,6 +93,11 @@ private:
             static_cast<uint8_t>(value)
         };
     }
+
+
+    bool debugMode = true;
+    bool encryption_enabled = true;
+    bool commitOnDestroy = false;
 public:
     void init();
     // === SINGLETON PROPERTIES
@@ -251,8 +260,9 @@ public:
 
     // SETTERS
     void set_file_extension(const std::string& new_extension);
-    void enable_encryption(const bool enable);
     void set_encryption_key(const std::string& key);
+    void enable_encryption(const bool enable);
+    void enable_autocommit_on_exit(const bool enable);
 };
 
 inline SaveManager& saveMgr = SaveManager::get();

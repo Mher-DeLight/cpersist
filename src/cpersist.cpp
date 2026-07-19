@@ -367,12 +367,15 @@ const std::string& SaveManager::get_file_extension() {
 void SaveManager::set_file_extension(const std::string& new_extension) {
     fileExtension = "." + new_extension;
 }
-void SaveManager::enable_encryption(const bool enable) {
-    encryption_enabled = enable;
-}
 void SaveManager::set_encryption_key(const std::string& key) {
     encrMgr.setEncryptionKey(cpersist_internal::hashString(key));
     init(); // reinit to parse existing files into the buffer
+}
+void SaveManager::enable_encryption(const bool enable) {
+    encryption_enabled = enable;
+}
+void SaveManager::enable_autocommit_on_exit(const bool enable) {
+    commitOnDestroy = enable;
 }
 
 std::vector<uint8_t> cpersist_internal::hashString(const std::string& str)
