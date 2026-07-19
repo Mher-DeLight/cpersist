@@ -179,7 +179,7 @@ std::vector<uint8_t> SaveManager::readFileAsBinary(const std::string& filename) 
     
     return bytes;
 }
-bool SaveManager::contains(const std::string& dataname) {
+bool SaveManager::contains(const std::string& dataname, const bool loose) {
     auto fileIt = files.find(current_file);
     if (fileIt == files.end()) {
         cpersist_internal::ErrorManager::get().throwError("Current file is not loaded.");
@@ -189,12 +189,12 @@ bool SaveManager::contains(const std::string& dataname) {
 
     auto fieldIt = std::find_if(fields.begin(), fields.end(),
         [&](const Field& field) {
-            return field.name == dataname;
+            return (field.name == dataname) || (field.name.starts_with(dataname + ".") && loose);
         });
 
     return fieldIt != fields.end();
 }
-bool SaveManager::contains(const std::initializer_list<std::string>& datanames) {
+bool SaveManager::contains(const std::initializer_list<std::string>& datanames, const bool loose) {
     auto fileIt = files.find(current_file);
     if (fileIt == files.end()) {
         cpersist_internal::ErrorManager::get().throwError("Current file is not loaded.");
@@ -205,7 +205,7 @@ bool SaveManager::contains(const std::initializer_list<std::string>& datanames) 
     for (const auto& dataname : datanames) {
         auto fieldIt = std::find_if(fields.begin(), fields.end(),
             [&](const Field& field) {
-                return field.name == dataname;
+                return (field.name == dataname) || (field.name.starts_with(dataname + ".") && loose);
             });
 
         if (fieldIt == fields.end()) {

@@ -235,8 +235,8 @@ public:
         stream << read<T>(name, defaultValue, parent);
     }
 
-    bool contains(const std::string& dataname);
-    bool contains(const std::initializer_list<std::string>& datanames);
+    bool contains(const std::string& dataname, const bool loose = true);
+    bool contains(const std::initializer_list<std::string>& datanames, const bool loose = true);
 
     // COMMIT
     void commit();
