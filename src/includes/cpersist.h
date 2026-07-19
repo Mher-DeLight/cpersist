@@ -48,11 +48,24 @@ namespace cpersist_internal {
 
 class Field {
 public:
-    Field(const std::string& fieldname, std::vector<uint8_t>& fieldvalue):
+    virtual ~Field() = default;
+};
+class ValField: public Field {
+public:
+    ValField(const std::string& fieldname, std::vector<uint8_t>& fieldvalue):
         name(fieldname), value(fieldvalue) {}
 
     std::string name;
     std::vector<uint8_t> value;
+};
+class RefField: public Field {
+public:
+    RefField(const std::string& fieldname, void* pospointer, uint32_t objSize):
+        name(fieldname), posPointer(pospointer), size(objSize) {}
+
+    std::string name;
+    void* posPointer;
+    uint32_t size;
 };
 
 
@@ -60,7 +73,7 @@ class SaveManager {
 private:
 
     std::string current_file;
-    std::unordered_map<std::string, std::vector<Field>> files;
+    std::unordered_map<std::string, std::vector<Field*>> files;
     void debugLog(const std::string& message) {
         if (!debugMode) {return;}
         std::cout << "[CPERSIST LOG] " << message << std::endl;
@@ -68,7 +81,8 @@ private:
     std::string fileExtension = ".bin";
     std::string folderName = "savedata";
     std::filesystem::path fullFilePath;
-    std::vector<Field> readFile(const std::string& filename);
+    std::vector<ValField> readFile(const std::string& filename);
+    std::unordered_map<std::string, std::vector<std::string>> linkedVariableNames;
     
     SaveManager() {
         init();
@@ -168,13 +182,19 @@ public:
             }
         }
 
-        Field field(fullname.data(), serialized);
+        ValField field(fullname.data(), serialized);
         files[current_file].push_back(field);
     };
     uint64_t getDataPosition(const std::string& name, const bool loose = false);
     std::vector<uint8_t> readFileAsBinary(const std::string& filename);
     bool isFileEncrypted(const std::string& filename = "");
     
+    template<typename T>
+    void link(const std::string& name, T& value) {
+        linkedVariableNames[current_file].push_back(name);
+        files[current_file].push_back(RefField(name, &value, sizeof(value)));
+    }
+
     template<typename T>
     void sync(const std::string& name, T& value) {
         if (contains(name)) {
@@ -214,7 +234,7 @@ public:
         const auto& fields = fileIt->second;
 
         auto fieldIt = std::find_if(fields.begin(), fields.end(),
-            [&](const Field& field) {
+            [&](const ValField& field) {
                 return field.name == fullname;
             });
 

@@ -188,7 +188,7 @@ bool SaveManager::contains(const std::string& dataname, const bool loose) {
     const auto& fields = fileIt->second;
 
     auto fieldIt = std::find_if(fields.begin(), fields.end(),
-        [&](const Field& field) {
+        [&](const ValField& field) {
             return (field.name == dataname) || (field.name.starts_with(dataname + ".") && loose);
         });
 
@@ -230,7 +230,7 @@ bool SaveManager::isFileEncrypted(const std::string& filename) {
 
     return encryptionMagicByte != 0x00;
 }
-std::vector<Field> SaveManager::readFile(const std::string& filename) {
+std::vector<ValField> SaveManager::readFile(const std::string& filename) {
     if (!file_exists(filename)) {
         cpersist_internal::ErrorManager::get().throwError("Cannot parse file \"" + filename + fileExtension + "\"; it is either \
             deleted, corrupted, or not loaded into the buffer.");
@@ -306,29 +306,54 @@ void SaveManager::commit() {
         return;
     }
 
+    // TODO: FIX VALFIELD, REFFIELD, AND LINK()
+
     file.write(reinterpret_cast<const char*>(&encryption_enabled), sizeof(encryption_enabled));
 
     std::vector<uint8_t> bytes;
-    std::vector<Field> fields = files[current_file];
+    std::vector<Field*> fields = files[current_file];
     for (auto& field : fields) {
-        bytes.push_back(field.name.size());
-        for (auto& c : field.name) {
-            bytes.push_back(c);
-        }
+        if (ValField* vf = dynamic_cast<ValField*>(field)) {
+            bytes.push_back(vf->name.size());
+            for (auto& c : vf->name) {
+                bytes.push_back(c);
+            }
+    
+            uint32_t valueSize = static_cast<uint32_t>(vf->value.size());
+            std::vector<std::uint8_t> valueSizeVector = {
+                static_cast<std::uint8_t>((valueSize      ) & 0xFF),
+                static_cast<std::uint8_t>((valueSize >> 8 ) & 0xFF),
+                static_cast<std::uint8_t>((valueSize >> 16) & 0xFF),
+                static_cast<std::uint8_t>((valueSize >> 24) & 0xFF)
+            };
+            for (auto byt : valueSizeVector) {
+                bytes.push_back(byt);
+            }
+            
+            for (auto& vl : vf->value) {
+                bytes.push_back(vl);
+            }
+        } else if (RefField* rf = dynamic_cast<RefField*>(field)) {
+            bytes.push_back(rf->name.size());
+            for (auto& c : rf->name) {
+                bytes.push_back(c);
+            }
 
-        uint32_t valueSize = static_cast<uint32_t>(field.value.size());
-        std::vector<std::uint8_t> valueSizeVector = {
-            static_cast<std::uint8_t>((valueSize      ) & 0xFF),
-            static_cast<std::uint8_t>((valueSize >> 8 ) & 0xFF),
-            static_cast<std::uint8_t>((valueSize >> 16) & 0xFF),
-            static_cast<std::uint8_t>((valueSize >> 24) & 0xFF)
-        };
-        for (auto byt : valueSizeVector) {
-            bytes.push_back(byt);
-        }
-        
-        for (auto& vl : field.value) {
-            bytes.push_back(vl);
+            uint32_t valueSize = rf->size;
+            std::vector<std::uint8_t> valueSizeVector = {
+                static_cast<std::uint8_t>((valueSize      ) & 0xFF),
+                static_cast<std::uint8_t>((valueSize >> 8 ) & 0xFF),
+                static_cast<std::uint8_t>((valueSize >> 16) & 0xFF),
+                static_cast<std::uint8_t>((valueSize >> 24) & 0xFF)
+            };
+            for (auto byt : valueSizeVector) {
+                bytes.push_back(byt);
+            }
+
+            const uint8_t* bytesPtr = static_cast<const uint8_t*>(rf->posPointer);
+            for (uint32_t i = 0; i < valueSize; ++i) {
+                bytes.push_back(bytesPtr[i]);
+            }
         }
     }
 
