@@ -8,7 +8,7 @@ void SaveManager::init() {
     loadExistingFiles();
 
     for (auto& pair : files) {
-        files[pair.first] = parseFile(pair.first); // load already written data so truncate doesn't overwrite it
+        files[pair.first] = readFile(pair.first); // load already written data so truncate doesn't overwrite it
     }
 }
 void SaveManager::loadExistingFiles() {
@@ -230,7 +230,7 @@ bool SaveManager::isFileEncrypted(const std::string& filename) {
 
     return encryptionMagicByte != 0x00;
 }
-std::vector<Field> SaveManager::parseFile(const std::string& filename) {
+std::vector<Field> SaveManager::readFile(const std::string& filename) {
     if (!file_exists(filename)) {
         cpersist_internal::ErrorManager::get().throwError("Cannot parse file \"" + filename + fileExtension + "\"; it is either \
             deleted, corrupted, or not loaded into the buffer.");

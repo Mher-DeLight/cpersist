@@ -68,7 +68,7 @@ private:
     std::string fileExtension = ".bin";
     std::string folderName = "savedata";
     std::filesystem::path fullFilePath;
-    std::vector<Field> parseFile(const std::string& filename);
+    std::vector<Field> readFile(const std::string& filename);
     
     SaveManager() {
         init();
