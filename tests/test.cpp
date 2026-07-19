@@ -3,7 +3,7 @@
 
 int main () {
     saveMgr.enable_encryption(true);
-    saveMgr.set_encryption_key("wowyoureallyfoundit");
+    saveMgr.set_encryption_key("@a_5q^mdfi&jidad]a]kmfdg");
 
     saveMgr.open("myfile");
     saveMgr.write("number", 3);

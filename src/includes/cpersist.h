@@ -48,11 +48,25 @@ namespace cpersist_internal {
 
 class Field {
 public:
-    Field(const std::string& fieldname, std::vector<uint8_t>& fieldvalue):
+    virtual ~Field() = default;
+};
+class ValField : public Field {
+public:
+    ValField(const std::string& fieldname, std::vector<uint8_t>& fieldvalue):
         name(fieldname), value(fieldvalue) {}
 
     std::string name;
     std::vector<uint8_t> value;
+};
+
+template<typename T>
+class RefField : public Field {
+public:
+    RefField(const std::string& fieldname, T& obj):
+        name(fieldname), object(obj) {}
+
+    std::string name;
+    T& object;
 };
 
 
@@ -60,7 +74,7 @@ class SaveManager {
 private:
 
     std::string current_file;
-    std::unordered_map<std::string, std::vector<Field>> files;
+    std::unordered_map<std::string, std::vector<ValField>> files;
     void debugLog(const std::string& message) {
         if (!debugMode) {return;}
         std::cout << "[CPERSIST LOG] " << message << std::endl;
@@ -68,7 +82,7 @@ private:
     std::string fileExtension = ".bin";
     std::string folderName = "savedata";
     std::filesystem::path fullFilePath;
-    std::vector<Field> readFile(const std::string& filename);
+    std::vector<ValField> readFile(const std::string& filename);
     
     SaveManager() {
         init();
@@ -168,7 +182,7 @@ public:
             }
         }
 
-        Field field(fullname.data(), serialized);
+        ValField field(fullname.data(), serialized);
         files[current_file].push_back(field);
     };
     uint64_t getDataPosition(const std::string& name, const bool loose = false);
@@ -214,7 +228,7 @@ public:
         const auto& fields = fileIt->second;
 
         auto fieldIt = std::find_if(fields.begin(), fields.end(),
-            [&](const Field& field) {
+            [&](const ValField& field) {
                 return field.name == fullname;
             });
 

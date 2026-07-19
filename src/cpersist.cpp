@@ -188,7 +188,7 @@ bool SaveManager::contains(const std::string& dataname, const bool loose) {
     const auto& fields = fileIt->second;
 
     auto fieldIt = std::find_if(fields.begin(), fields.end(),
-        [&](const Field& field) {
+        [&](const ValField& field) {
             return (field.name == dataname) || (field.name.starts_with(dataname + ".") && loose);
         });
 
@@ -204,7 +204,7 @@ bool SaveManager::contains(const std::initializer_list<std::string>& datanames, 
 
     for (const auto& dataname : datanames) {
         auto fieldIt = std::find_if(fields.begin(), fields.end(),
-            [&](const Field& field) {
+            [&](const ValField& field) {
                 return (field.name == dataname) || (field.name.starts_with(dataname + ".") && loose);
             });
 
@@ -230,19 +230,19 @@ bool SaveManager::isFileEncrypted(const std::string& filename) {
 
     return encryptionMagicByte != 0x00;
 }
-std::vector<Field> SaveManager::readFile(const std::string& filename) {
+std::vector<ValField> SaveManager::readFile(const std::string& filename) {
     if (!file_exists(filename)) {
         cpersist_internal::ErrorManager::get().throwError("Cannot parse file \"" + filename + fileExtension + "\"; it is either \
             deleted, corrupted, or not loaded into the buffer.");
     }
 
     if (isFileEncrypted(filename) && encrMgr.encryKeyEmpty()) {
-        return std::vector<Field>();
+        return std::vector<ValField>();
     }
 
     std::vector<uint8_t> data = readFileAsBinary(filename);
     
-    std::vector<Field> fields;
+    std::vector<ValField> fields;
     uint64_t position = 0;
     while (position < data.size()) {
         // ===== NAME
@@ -285,7 +285,7 @@ std::vector<Field> SaveManager::readFile(const std::string& filename) {
         // copy the data into a new vector
         std::vector<uint8_t> fieldData(data.begin() + position,data.begin() + position + dataSize);
 
-        // construct and store the field. we'll use emplace to avoid making a temporary Field object
+        // construct and store the field. we'll use emplace to avoid making a temporary ValField object
         fields.emplace_back(currentName, fieldData);
 
         // Move to the next field
@@ -309,7 +309,7 @@ void SaveManager::commit() {
     file.write(reinterpret_cast<const char*>(&encryption_enabled), sizeof(encryption_enabled));
 
     std::vector<uint8_t> bytes;
-    std::vector<Field> fields = files[current_file];
+    std::vector<ValField> fields = files[current_file];
     for (auto& field : fields) {
         bytes.push_back(field.name.size());
         for (auto& c : field.name) {
