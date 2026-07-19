@@ -227,6 +227,7 @@ public:
     }
 
     bool contains(const std::string& dataname);
+    bool contains(const std::initializer_list<std::string>& datanames);
 
     // COMMIT
     void commit();

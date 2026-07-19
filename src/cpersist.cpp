@@ -194,6 +194,27 @@ bool SaveManager::contains(const std::string& dataname) {
 
     return fieldIt != fields.end();
 }
+bool SaveManager::contains(const std::initializer_list<std::string>& datanames) {
+    auto fileIt = files.find(current_file);
+    if (fileIt == files.end()) {
+        cpersist_internal::ErrorManager::get().throwError("Current file is not loaded.");
+    }
+
+    const auto& fields = fileIt->second;
+
+    for (const auto& dataname : datanames) {
+        auto fieldIt = std::find_if(fields.begin(), fields.end(),
+            [&](const Field& field) {
+                return field.name == dataname;
+            });
+
+        if (fieldIt == fields.end()) {
+            return false;
+        }
+    }
+
+    return true;
+}
 bool SaveManager::isFileEncrypted(const std::string& filename) {
     std::string curFp = filename.empty()? fullFilePath : (std::filesystem::path(folderName) / (filename + fileExtension));
     std::ifstream file(curFp, std::ios::binary);

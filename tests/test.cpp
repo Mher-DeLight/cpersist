@@ -6,14 +6,15 @@ int main()
     saveMgr.enable_encryption(true);
     saveMgr.set_encryption_key("mysecretkey");
 
-    saveMgr.open("myfile");
+    saveMgr.open("myfile2");
 
-    if (!saveMgr.file_exists_on_disk("myfile")) {
-        saveMgr.write("b", 5);
+    if (!saveMgr.file_exists_on_disk("myfile") || !saveMgr.contains({"a", "b", "c"})) {
         saveMgr.write("a", 3);
+        saveMgr.write("b", 5);
+        saveMgr.write("c", 6);
         saveMgr.commit();
     } else {
-        std::cout << "a=" << saveMgr.read<int>("a") << " b=" << saveMgr.read<int>("b") << std::endl;
+        std::cout << "c=" << saveMgr.read<int>("c") << " b=" << saveMgr.read<int>("b") << std::endl;
     }
     
 
