@@ -29,3 +29,19 @@ if (!saveMgr.contains("highscore")) {
     high_score = saveMgr.read<int>("highscore");
 }
 ```
+
+## Installation
+Installing cpersist is a simple process. Go to your project directory, and make a folder called "external" if it doesn't already exist. Then, go into the folder and run
+```bash
+git clone https://www.github.com/Mher-DeLight/cpersist
+```
+Then go to your project's CMakeLists.txt, which is on the same level as "extern," and add:
+```cmake
+add_subdirectory(external/cpersist)
+target_link_libraries(c++ptest PRIVATE cpersist)
+```
+Then in your C++ file, you can do:
+```cpp
+#include <cpersist.h>
+```
+Then you can use cpersist.
