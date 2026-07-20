@@ -398,8 +398,7 @@ void SaveManager::enable_autocommit_on_exit(const bool enable) {
     commitOnDestroy = enable;
 }
 
-std::vector<uint8_t> cpersist_internal::hashString(const std::string& str)
-{
+std::vector<uint8_t> cpersist_internal::hashString(const std::string& str) {
     constexpr uint64_t seeds[4] = {
         0x243F6A8885A308D3ULL,
         0x13198A2E03707344ULL,
