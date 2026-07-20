@@ -4,18 +4,6 @@
 
 The library is designed with simplicity in mind. Whether you're making a small game, a command-line utility, or a personal project, cpersist aims to make persistence easy without requiring knowledge of serialization formats or complex file I/O.
 
-## Why use cpersist?
-
-Saving application data is something almost every program eventually needs to do. Unfortunately, writing your own save system often means dealing with:
-
-* Opening and closing files
-* Choosing a file format
-* Parsing data back into your program
-* Handling errors
-* Organizing save files
-
-cpersist abstracts away most of this boilerplate so you can focus on your application instead of storage.
-
 ## Features
 
 cpersist is currently in a very early stage, meaning features are minimal. Current features include:
@@ -28,19 +16,6 @@ cpersist is currently in a very early stage, meaning features are minimal. Curre
 * Lightweight with minimal dependencies.
 * Custom writing and loading for custom classes
 * Simple and beginner friendly API.
-
-## Example use cases
-
-cpersist is useful for storing things like:
-
-* User settings
-* Window size and position
-* High scores
-* Game save data
-* Configuration values
-* Recently opened files
-* Application preferences
-* Cached values
 
 ## Example
 

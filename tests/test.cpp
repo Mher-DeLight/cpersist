@@ -8,4 +8,5 @@ int main () {
     saveMgr.open("myfile");
     saveMgr.write("number", 3);
     saveMgr.commit();
+    std::cout << saveMgr.read<int>("number") << std::endl;
 }
