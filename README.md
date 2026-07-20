@@ -20,14 +20,12 @@ cpersist is currently in a very early stage, meaning features are minimal. Curre
 ## Example
 
 ```cpp
-SaveManager sm;
-int high_score = 3;
-sm.create_new_file("scores");
-sm.change_file("scores");
-if (!sm.file_contains_data("highscore")) {
-    sm.write("highscore", high_score); // save if not saved already
-    sm.commit();
+saveMgr.open("playerdata");
+int high_score = 10;
+if (!saveMgr.contains("highscore")) {
+    saveMgr.write("highscore", high_score); // save if not saved already
+    saveMgr.commit();
 } else {
-    high_score = sm.read<int>("highscore");
+    high_score = saveMgr.read<int>("highscore");
 }
 ```
