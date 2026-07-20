@@ -41,7 +41,7 @@ namespace cpersist
         }
     };
 
-    // ==== STD::VECTOR ====
+    // ==== STD::VECTOR ==== (trivial + supported types only)
     template<typename T>
     struct Serializer<std::vector<T>> {
         static void write(std::ostream& os, const std::vector<T>& value) {
@@ -70,9 +70,7 @@ namespace cpersist
 
             if constexpr (std::is_trivially_copyable_v<T>) {
                 if (!value.empty()) {
-                    is.read(
-                        reinterpret_cast<char*>(value.data()),
-                        size * sizeof(T)
+                    is.read(reinterpret_cast<char*>(value.data()), size * sizeof(T)
                     );
                 }
             } else {

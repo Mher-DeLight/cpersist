@@ -174,6 +174,7 @@ public:
     uint64_t getDataPosition(const std::string& name, const bool loose = false);
     std::vector<uint8_t> readFileAsBinary(const std::string& filename);
     bool isFileEncrypted(const std::string& filename = "");
+    void erase(const std::string& fieldname);
     
     template<typename T>
     void sync(const std::string& name, T& value) {

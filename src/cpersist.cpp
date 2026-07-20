@@ -341,6 +341,26 @@ void SaveManager::commit() {
         static_cast<std::streamsize>(bytes.size())
     );
 }
+void SaveManager::erase(const std::string& fieldname) {
+    auto fileIt = files.find(current_file);
+    if (fileIt == files.end()) {
+        cpersist_internal::ErrorManager::get().throwError("Current file is not loaded.");
+    }
+
+    auto& fields = fileIt->second;
+
+    auto fieldIt = std::find_if(fields.begin(), fields.end(),
+        [&](const Field& field) {
+            return (field.name == fieldname) || field.name.starts_with(fieldname + ".");
+        });
+    
+    if (fieldIt == fields.end()) {
+        cpersist_internal::ErrorManager::get().throwError("Cannot delete field \"" + fieldname + "\" as it is nonexistent.");
+        return;
+    }
+
+    fields.erase(fieldIt);
+}
 
 // LOGGERS
 void SaveManager::log_filenames() {
