@@ -29,6 +29,13 @@ if (!saveMgr.contains("highscore")) {
     high_score = saveMgr.read<int>("highscore");
 }
 ```
+Or, its equivalent:
+```cpp
+saveMgr.open("playerdata");
+int high_score = 10;
+saveMgr.sync("highscore", highscore);
+saveMgr.commit();
+```
 
 ## Installation
 Installing cpersist is a simple process. Go to your project directory, and make a folder called "external" if it doesn't already exist. Then, go into the folder and run
