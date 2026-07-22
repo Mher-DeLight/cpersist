@@ -38,7 +38,7 @@ git clone https://www.github.com/Mher-DeLight/cpersist
 Then go to your project's CMakeLists.txt, which is on the same level as "extern," and add:
 ```cmake
 add_subdirectory(external/cpersist)
-target_link_libraries(c++ptest PRIVATE cpersist)
+target_link_libraries(projectname PRIVATE cpersist)
 ```
 Then in your C++ file, you can do:
 ```cpp
