@@ -1,0 +1,33 @@
+BasedOnStyle: LLVM
+
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+ContinuationIndentWidth: 4
+
+AccessModifierOffset: -4
+IndentCaseLabels: true
+IndentCaseBlocks: false
+
+BreakBeforeBraces: Attach
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+
+ColumnLimit: 100
+
+PointerAlignment: Left
+ReferenceAlignment: Pointer
+
+SpaceBeforeParens: ControlStatements
+SpacesInParentheses: false
+SpacesInSquareBrackets: false
+SpaceInEmptyParentheses: false
+
+AlignConsecutiveAssignments: false
+AlignConsecutiveDeclarations: false
+
+SortIncludes: true
+ReflowComments: true
+
+Standard: Latest

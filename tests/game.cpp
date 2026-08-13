@@ -1,8 +1,8 @@
+#include <cpersist.h>
+#include <cstdlib>
 #include <iostream>
 #include <termios.h>
 #include <unistd.h>
-#include <cstdlib>
-#include <cpersist.h>
 
 char getch() {
     termios oldt, newt;
@@ -27,7 +27,7 @@ int main() {
     int x = 10;
     int y = 10;
     int speed = 1;
-    
+
     saveMgr.open("saves");
 
     saveMgr.sync("x", x);
@@ -42,8 +42,6 @@ int main() {
         for (int i = 0; i < x; i++) {
             std::cout << " ";
         }
-        
-
 
         std::cout << "O";
 
@@ -58,9 +56,11 @@ int main() {
             y += speed;
         else if (key == 'q')
             break;
-        
-        if (x < 0) x = 0;
-        if (y < 0) y = 0;
+
+        if (x < 0)
+            x = 0;
+        if (y < 0)
+            y = 0;
     }
 
     system("clear");

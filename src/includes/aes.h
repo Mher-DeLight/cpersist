@@ -3,18 +3,16 @@
 #include <openssl/evp.h>
 #include <openssl/rand.h>
 
-#include <cstdint>
-#include <stdexcept>
-#include <vector>
-#include <string>
-#include <memory>
 #include "error_handler.h"
-
+#include <cstdint>
+#include <memory>
+#include <stdexcept>
+#include <string>
+#include <vector>
 
 class AES_GCM_Manager {
 private:
-    template<typename erType>
-    void panic(const std::string& msg) {
+    template <typename erType> void panic(const std::string& msg) {
         cpersist_internal::ErrorManager::get().throwError(msg);
     }
     AES_GCM_Manager() = default;
@@ -23,12 +21,12 @@ private:
             OPENSSL_cleanse(encrKey.data(), encrKey.size());
         }
     }
+
 public:
     // === SINGLETON PROPERTIES
     AES_GCM_Manager(const AES_GCM_Manager&) = delete;
     AES_GCM_Manager& operator=(const AES_GCM_Manager&) = delete;
 
-    
     static AES_GCM_Manager& get() {
         static AES_GCM_Manager instance;
         return instance;
