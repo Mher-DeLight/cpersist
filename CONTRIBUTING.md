@@ -1,5 +1,5 @@
 ## Contribution Guidelines
-As the repository is currently maintained by one person (hello, that's me!) there aren't any strict guidelines for contributing. I'd be really happy if you fix any bugs you can spot. Write with K&R style, and try to fit the general style of the code around it.
+As the repository is currently maintained by one person (hello, that's me!) there aren't any strict guidelines for contributing. I'd be really happy if you fix any bugs you can spot. Write with K&R style, and try to fit the general style of the code around it. If possible, please use clang-format, as the configuration file is provided with the project.
 
 ## Contributing Guide
 Assuming you're on GitHub, you must first fork the repository to your own account by pressing the fork button. 
