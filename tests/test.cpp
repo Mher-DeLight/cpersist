@@ -4,7 +4,7 @@
 
 TEST(CPersist, IOWorks) {
     saveMgr.enable_encryption(true);
-    saveMgr.set_encryption_key("wowyoureallyfoundit");
+    saveMgr.set_encryption_key("myencryptionkey");
 
     saveMgr.open("myfile");
 
