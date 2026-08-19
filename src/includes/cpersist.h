@@ -18,8 +18,29 @@
 #include <unordered_map>
 #include <vector>
 
-class WriteArchive;
-class ReadArchive; // forward declaration so we can use them in hasArchive
+// ARCHIVES
+
+class Archive {
+protected: // we don't want others to access it, only it and its children
+    std::string parent;
+
+public:
+    explicit Archive(std::string parent) : parent(std::move(parent)) {}
+};
+
+class WriteArchive : public Archive {
+public:
+    using Archive::Archive; // inherit the constructors too
+
+    template <typename T> void operator()(const std::string& key, T& value);
+};
+
+class ReadArchive : public Archive {
+public:
+    using Archive::Archive;
+
+    template <typename T> void operator()(const std::string& key, T& value);
+};
 
 namespace cpersist {
 template <typename T>
@@ -256,30 +277,10 @@ public:
 
 inline SaveManager& saveMgr = SaveManager::get();
 
-// ARCHIVES
-
-class Archive {
-protected: // we don't want others to access it, only it and its children
-    std::string parent;
-
-public:
-    explicit Archive(std::string parent) : parent(std::move(parent)) {}
-};
-
-class WriteArchive : public Archive {
-public:
-    using Archive::Archive; // inherit the constructors too
-
-    template <typename T> void operator()(const std::string& key, T& value) {
-        saveMgr.write(key, value, parent);
-    }
-};
-
-class ReadArchive : public Archive {
-public:
-    using Archive::Archive;
-
-    template <typename T> void operator()(const std::string& key, T& value) {
-        value = saveMgr.read<T>(key, std::nullopt, parent);
-    }
-};
+// the implementations are after the class is defined because there is a circular dependency
+template <typename T> void WriteArchive::operator()(const std::string& key, T& value) {
+    saveMgr.write(key, value, parent);
+}
+template <typename T> void ReadArchive::operator()(const std::string& key, T& value) {
+    value = saveMgr.read<T>(key, std::nullopt, parent);
+}
