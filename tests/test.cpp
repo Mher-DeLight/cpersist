@@ -1,7 +1,8 @@
 #include <cpersist.h>
+#include <gtest/gtest.h>
 #include <iostream>
 
-int main() {
+TEST(CPersist, IOWorks) {
     saveMgr.enable_encryption(true);
     saveMgr.set_encryption_key("wowyoureallyfoundit");
 
@@ -10,5 +11,6 @@ int main() {
     saveMgr.write("number", 3);
     saveMgr.commit();
 
-    std::cout << saveMgr.read<int>("number") << std::endl;
+    int mynumber = saveMgr.read<int>("number");
+    EXPECT_EQ(mynumber, 3);
 }
