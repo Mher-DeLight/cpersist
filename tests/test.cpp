@@ -13,4 +13,12 @@ TEST(CPersist, IOWorks) {
 
     int mynumber = saveMgr.read<int>("number");
     EXPECT_EQ(mynumber, 3);
+
+    mynumber = 0;
+    saveMgr.read_into("number", mynumber);
+    EXPECT_EQ(mynumber, 3);
+
+    std::stringstream stream;
+    saveMgr.read_into_stream<int>("number", stream);
+    EXPECT_EQ(stream.str(), "3");
 }
