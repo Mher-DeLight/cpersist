@@ -1,4 +1,4 @@
-#include "includes/cpersist.h"
+#include "../include/cpersist.h"
 #include <algorithm>
 #include <iostream>
 
@@ -86,7 +86,7 @@ bool SaveManager::create_new_file(const std::string& new_file) {
 bool SaveManager::open(const std::string& filename) {
     if (!filename_fits_standards(filename)) {
         return false;
-    }                             // doesn't fit naming standards
+    } // doesn't fit naming standards
     if (!files.count(filename)) { // file doesn't exist, create it
         files.try_emplace(filename);
     }
@@ -235,9 +235,9 @@ bool SaveManager::contains(const std::initializer_list<std::string>& datanames, 
     return true;
 }
 bool SaveManager::isFileEncrypted(const std::string& filename) {
-    std::filesystem::path curFp = filename.empty()
-                            ? fullFilePath
-                            : (std::filesystem::path(folderName) / (filename + fileExtension));
+    std::filesystem::path curFp =
+        filename.empty() ? fullFilePath
+                         : (std::filesystem::path(folderName) / (filename + fileExtension));
     std::ifstream file(curFp, std::ios::binary);
 
     if (!file) {
