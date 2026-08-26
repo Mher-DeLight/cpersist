@@ -20,6 +20,7 @@ cpersist is currently in a very early stage, meaning features are minimal. Curre
 ## Example
 
 ```cpp
+SaveManager saveMgr;
 saveMgr.open("playerdata");
 int high_score = 10;
 if (!saveMgr.contains("highscore")) {
@@ -31,6 +32,7 @@ if (!saveMgr.contains("highscore")) {
 ```
 Or, its equivalent:
 ```cpp
+SaveManager saveMgr;
 saveMgr.open("playerdata");
 int high_score = 10;
 saveMgr.sync("highscore", highscore);
