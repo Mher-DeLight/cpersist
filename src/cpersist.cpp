@@ -5,6 +5,7 @@
 void SaveManager::init() {
     std::filesystem::create_directory(folderName); // creates the folder if it doesn't exist
 
+    files.clear();
     loadExistingFiles();
 
     for (auto& pair : files) {
@@ -408,6 +409,7 @@ const std::string& SaveManager::get_file_extension() {
 // SETTERS
 void SaveManager::set_file_extension(const std::string& new_extension) {
     fileExtension = "." + new_extension;
+    init();
 }
 void SaveManager::set_encryption_key(const std::string& key) {
     encrMgr.setEncryptionKey(cpersist_internal::hashString(key));
