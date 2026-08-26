@@ -193,7 +193,7 @@ std::vector<uint8_t> SaveManager::readFileAsBinary(const std::string& filename) 
         cpersist_internal::ErrorManager::get().throwError("Cannot read data file " + filename +
                                                           fileExtension);
     }
-    bytes.erase(bytes.begin(), bytes.begin() + sizeof(CPERSIST_MAGIC_HEADER) - 1);
+    bytes.erase(bytes.begin(), bytes.begin() + sizeof(CPERSIST_MAGIC_HEADER));
 
     if (fileEncr) {
         bytes = encrMgr.decrypt(bytes);
