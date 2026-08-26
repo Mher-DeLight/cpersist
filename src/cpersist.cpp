@@ -193,7 +193,7 @@ std::vector<uint8_t> SaveManager::readFileAsBinary(const std::string& filename) 
         cpersist_internal::ErrorManager::get().throwError("Cannot read data file " + filename +
                                                           fileExtension);
     }
-    bytes.erase(bytes.begin());
+    bytes.erase(bytes.begin(), bytes.begin() + sizeof(CPERSIST_MAGIC_HEADER));
 
     if (fileEncr) {
         bytes = encrMgr.decrypt(bytes);
@@ -243,6 +243,16 @@ bool SaveManager::isFileEncrypted(const std::string& filename) {
 
     if (!file) {
         cpersist_internal::ErrorManager::get().throwError("Failed to open file: " + current_file);
+    }
+
+    std::string magicHeader(sizeof(CPERSIST_MAGIC_HEADER) - 1, '\0');
+    if (!file.read(magicHeader.data(), magicHeader.size())) {
+        cpersist_internal::ErrorManager::get().throwError("Cannot read data file " + current_file);
+    }
+
+    if (magicHeader != CPERSIST_MAGIC_HEADER) {
+        cpersist_internal::ErrorManager::get().throwError("Invalid magic header in data file " +
+                                                          current_file);
     }
 
     uint8_t encryptionMagicByte;
@@ -333,7 +343,7 @@ void SaveManager::commit() {
                                                           fullFilePath.string() + ".\"");
         return;
     }
-
+    file.write(CPERSIST_MAGIC_HEADER, sizeof(CPERSIST_MAGIC_HEADER) - 1);
     file.write(reinterpret_cast<const char*>(&encryption_enabled), sizeof(encryption_enabled));
 
     std::vector<uint8_t> bytes;

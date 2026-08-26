@@ -24,10 +24,30 @@ TEST(CPersist, IOWorks) {
     EXPECT_EQ(mynumber, 3);
 
     std::stringstream stream;
-
     saveManager.read_into_stream<int>("number", stream);
-
     EXPECT_EQ(stream.str(), "3");
+    std::filesystem::remove("savedata/myfile.bin");
+}
+
+TEST(CPersist, InvalidMagicHeader) {
+    SaveManager saveManager;
+
+    saveManager.open("invalid_magic_header");
+    saveManager.commit();
+
+    std::filesystem::path filePath = "savedata/invalid_magic_header.bin";
+
+    std::fstream file(filePath, std::ios::in | std::ios::out | std::ios::binary);
+    ASSERT_TRUE(file.is_open());
+
+    const char invalidHeader[] = "INVALID_MAGIC_HEADER";
+    file.seekp(0);
+    file.write(invalidHeader, sizeof(invalidHeader) - 1);
+    file.close();
+
+    EXPECT_THROW(saveManager.init(), std::runtime_error);
+
+    std::filesystem::remove(filePath);
 }
 
 TEST(CPersist, FileExtensionLoading) {
