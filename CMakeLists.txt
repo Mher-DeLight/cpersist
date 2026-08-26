@@ -15,7 +15,7 @@ set_target_properties(cpersist PROPERTIES
 
 target_include_directories(cpersist
     PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/includes
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
 find_package(OpenSSL REQUIRED)
