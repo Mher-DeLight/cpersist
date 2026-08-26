@@ -5,6 +5,7 @@
 void SaveManager::init() {
     std::filesystem::create_directory(folderName); // creates the folder if it doesn't exist
 
+    files.clear();
     loadExistingFiles();
 
     for (auto& pair : files) {
@@ -86,7 +87,7 @@ bool SaveManager::create_new_file(const std::string& new_file) {
 bool SaveManager::open(const std::string& filename) {
     if (!filename_fits_standards(filename)) {
         return false;
-    }                             // doesn't fit naming standards
+    } // doesn't fit naming standards
     if (!files.count(filename)) { // file doesn't exist, create it
         files.try_emplace(filename);
     }
@@ -235,9 +236,10 @@ bool SaveManager::contains(const std::initializer_list<std::string>& datanames, 
     return true;
 }
 bool SaveManager::isFileEncrypted(const std::string& filename) {
-    std::string curFp = filename.empty()
-                            ? fullFilePath
-                            : (std::filesystem::path(folderName) / (filename + fileExtension));
+    std::string curFp =
+        filename.empty()
+            ? fullFilePath.string()
+            : (std::filesystem::path(folderName) / (filename + fileExtension)).string();
     std::ifstream file(curFp, std::ios::binary);
 
     if (!file) {
@@ -408,6 +410,7 @@ const std::string& SaveManager::get_file_extension() {
 // SETTERS
 void SaveManager::set_file_extension(const std::string& new_extension) {
     fileExtension = "." + new_extension;
+    init();
 }
 void SaveManager::set_encryption_key(const std::string& key) {
     encrMgr.setEncryptionKey(cpersist_internal::hashString(key));
