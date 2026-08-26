@@ -21,17 +21,19 @@ char getch() {
 }
 
 int main() {
-    saveMgr.enable_encryption(false);
-    saveMgr.enable_autocommit_on_exit(true);
+    SaveManager saveManager;
+
+    saveManager.enable_encryption(false);
+    saveManager.enable_autocommit_on_exit(true);
 
     int x = 10;
     int y = 10;
     int speed = 1;
 
-    saveMgr.open("saves");
+    saveManager.open("saves");
 
-    saveMgr.sync("x", x);
-    saveMgr.sync("y", y);
+    saveManager.sync("x", x);
+    saveManager.sync("y", y);
 
     while (true) {
         system("clear");
@@ -39,6 +41,7 @@ int main() {
         for (int i = 0; i < y; i++) {
             std::cout << "\n";
         }
+
         for (int i = 0; i < x; i++) {
             std::cout << " ";
         }
@@ -46,6 +49,7 @@ int main() {
         std::cout << "O";
 
         char key = getch();
+
         if (key == 'd')
             x += speed;
         else if (key == 'a')
@@ -59,11 +63,13 @@ int main() {
 
         if (x < 0)
             x = 0;
+
         if (y < 0)
             y = 0;
     }
 
     system("clear");
-    saveMgr.write("x", x);
-    saveMgr.write("y", y);
+
+    saveManager.write("x", x);
+    saveManager.write("y", y);
 }
