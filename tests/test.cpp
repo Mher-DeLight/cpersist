@@ -1,6 +1,7 @@
 #include <cpersist.h>
 #include <gtest/gtest.h>
 #include <iostream>
+#include <map>
 
 TEST(CPersist, IOWorks) {
     SaveManager saveManager;
@@ -83,6 +84,29 @@ TEST(CPersist, ArchivesWork) {
     saveManager.init(); // init again to read files
 
     EXPECT_EQ(saveManager.read<mystruct>("obj").number, 5);
+
+    std::filesystem::remove("savedata/" + filename + ".bin");
+}
+
+TEST(CPersist, StdMapSerialization) {
+    std::map<std::string, int> testMap = {{"one", 1}, {"two", 2}, {"three", 3}};
+    SaveManager saveManager;
+    const std::string filename = "stdmap_test";
+
+    std::filesystem::remove("savedata/" + filename + ".bin");
+
+    saveManager.open(filename);
+    saveManager.write("map", testMap);
+    saveManager.commit();
+
+    saveManager.erase("map");
+
+    saveManager.init(); // init again to read files
+
+    auto readmap = saveManager.read<std::map<std::string, int>>("map");
+    EXPECT_EQ(readmap["one"], 1);
+    EXPECT_EQ(readmap["two"], 2);
+    EXPECT_EQ(readmap["three"], 3);
 
     std::filesystem::remove("savedata/" + filename + ".bin");
 }
