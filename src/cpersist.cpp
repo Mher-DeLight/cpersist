@@ -245,12 +245,12 @@ bool SaveManager::isFileEncrypted(const std::string& filename) {
         cpersist_internal::ErrorManager::get().throwError("Failed to open file: " + current_file);
     }
 
-    char magicHeader[sizeof(CPERSIST_MAGIC_HEADER) - 1];
-    if (!file.read(magicHeader, sizeof(magicHeader))) {
+    std::string magicHeader(sizeof(CPERSIST_MAGIC_HEADER) - 1, '\0');
+    if (!file.read(magicHeader.data(), magicHeader.size())) {
         cpersist_internal::ErrorManager::get().throwError("Cannot read data file " + current_file);
     }
 
-    if (std::memcmp(magicHeader, CPERSIST_MAGIC_HEADER, sizeof(magicHeader)) != 0) {
+    if (magicHeader != CPERSIST_MAGIC_HEADER) {
         cpersist_internal::ErrorManager::get().throwError("Invalid magic header in data file " +
                                                           current_file);
     }
