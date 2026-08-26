@@ -24,9 +24,7 @@ TEST(CPersist, IOWorks) {
 
     std::stringstream stream;
 
-    saveManager.read_into_stream<int>(
-        "number",
-        stream);
+    saveManager.read_into_stream<int>("number", stream);
 
     EXPECT_EQ(stream.str(), "3");
 }
@@ -35,7 +33,7 @@ TEST(CPersist, FileExtensionLoading) {
     SaveManager saveManager;
     const std::string filename = "extension_loading";
 
-    saveManager_encryption(false);
+    saveManager.enable_encryption(false);
     saveManager.set_file_extension("dat");
 
     std::filesystem::remove("savedata/" + filename + ".dat");
@@ -56,4 +54,35 @@ TEST(CPersist, FileExtensionLoading) {
     EXPECT_EQ(saveManager.read<int>("number"), 5);
 
     std::filesystem::remove("savedata/" + filename + ".dat");
+}
+
+struct mystruct {
+    int number = 5;
+
+    template <typename Archive> void archive(Archive& ar) {
+        ar("number", number);
+    }
+    mystruct(int number_) : number(number_) {}
+    mystruct() = default;
+};
+TEST(CPersist, ArchivesWork) {
+    mystruct myobj(5);
+
+    SaveManager saveManager;
+    const std::string filename = "archive_test";
+    saveManager.enable_encryption(false);
+
+    std::filesystem::remove("savedata/" + filename + ".bin");
+
+    saveManager.open(filename);
+    saveManager.write("obj", myobj);
+    saveManager.commit();
+
+    saveManager.erase("obj");
+
+    saveManager.init(); // init again to read files
+
+    EXPECT_EQ(saveManager.read<mystruct>("obj").number, 5);
+
+    std::filesystem::remove("savedata/" + filename + ".bin");
 }

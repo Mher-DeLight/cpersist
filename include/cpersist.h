@@ -39,40 +39,27 @@ class WriteArchive : public Archive {
 public:
     using Archive::Archive;
 
-    template <typename T>
-    void operator()(const std::string& key, T& value);
+    template <typename T> void operator()(const std::string& key, T& value);
 };
 
 class ReadArchive : public Archive {
 public:
     using Archive::Archive;
 
-    template <typename T>
-    void operator()(const std::string& key, T& value);
+    template <typename T> void operator()(const std::string& key, T& value);
 };
 
 namespace cpersist {
 
 template <typename T>
-concept hasWrite =
-    requires(T& t, const std::string& parent) {
-        t.write(parent);
-    };
+concept hasWrite = requires(T& t, const std::string& parent) { t.write(parent); };
 
 template <typename T>
-concept hasRead =
-    requires(T& t, const std::string& parent) {
-        t.read(parent);
-    };
+concept hasRead = requires(T& t, const std::string& parent) { t.read(parent); };
 
 template <typename T>
-concept hasArchive =
-    requires(T& t, WriteArchive& war) {
-        t.archive(war);
-    } &&
-    requires(T& t, ReadArchive& rar) {
-        t.archive(rar);
-    };
+concept hasArchive = requires(T& t, WriteArchive& war) { t.archive(war); } &&
+                     requires(T& t, ReadArchive& rar) { t.archive(rar); };
 
 } // namespace cpersist
 
@@ -111,16 +98,10 @@ private:
     std::vector<Field> readFile(const std::string& filename);
 
     std::vector<uint8_t> toBytes(uint64_t value) {
-        return {
-            static_cast<uint8_t>(value >> 56),
-            static_cast<uint8_t>(value >> 48),
-            static_cast<uint8_t>(value >> 40),
-            static_cast<uint8_t>(value >> 32),
-            static_cast<uint8_t>(value >> 24),
-            static_cast<uint8_t>(value >> 16),
-            static_cast<uint8_t>(value >> 8),
-            static_cast<uint8_t>(value)
-        };
+        return {static_cast<uint8_t>(value >> 56), static_cast<uint8_t>(value >> 48),
+                static_cast<uint8_t>(value >> 40), static_cast<uint8_t>(value >> 32),
+                static_cast<uint8_t>(value >> 24), static_cast<uint8_t>(value >> 16),
+                static_cast<uint8_t>(value >> 8),  static_cast<uint8_t>(value)};
     }
 
     bool debugMode = true;
@@ -150,8 +131,7 @@ public:
 
     void loadExistingFiles();
 
-    bool filename_fits_standards(
-        const std::string& filename);
+    bool filename_fits_standards(const std::string& filename);
 
     void make_filename_safe(std::string& filename);
 
@@ -174,23 +154,16 @@ public:
     // WRITING
 
     template <typename T>
-    void write(
-        const std::string& name,
-        const T& object,
-        const std::string& parent = "") {
+    void write(const std::string& name, const T& object, const std::string& parent = "") {
 
         if (current_file.empty()) {
             cpersist_internal::ErrorManager::get().throwError(
                 "Can't write data while no file is chosen.");
         }
 
-        std::string fullname =
-            parent.empty() ? name : parent + "." + name;
+        std::string fullname = parent.empty() ? name : parent + "." + name;
 
-        std::stringstream dataStream(
-            std::ios::in |
-            std::ios::out |
-            std::ios::binary);
+        std::stringstream dataStream(std::ios::in | std::ios::out | std::ios::binary);
 
         if constexpr (cpersist::hasArchive<T>) {
             WriteArchive ar(fullname, *this);
@@ -208,15 +181,12 @@ public:
         dataStream.seekg(0, std::ios::end);
 
         if (dataStream.tellg() == std::streampos(-1)) {
-            cpersist_internal::ErrorManager::get().throwError(
-                "Serialization failed.");
+            cpersist_internal::ErrorManager::get().throwError("Serialization failed.");
         }
 
         std::string dataString = dataStream.str();
 
-        std::vector<uint8_t> serialized(
-            dataString.begin(),
-            dataString.end());
+        std::vector<uint8_t> serialized(dataString.begin(), dataString.end());
 
         if (file_exists(current_file)) {
             for (auto& fd : files[current_file]) {
@@ -231,20 +201,15 @@ public:
         files[current_file].push_back(field);
     }
 
-    uint64_t getDataPosition(
-        const std::string& name,
-        const bool loose = false);
+    uint64_t getDataPosition(const std::string& name, const bool loose = false);
 
-    std::vector<uint8_t> readFileAsBinary(
-        const std::string& filename);
+    std::vector<uint8_t> readFileAsBinary(const std::string& filename);
 
-    bool isFileEncrypted(
-        const std::string& filename = "");
+    bool isFileEncrypted(const std::string& filename = "");
 
     void erase(const std::string& fieldname);
 
-    template <typename T>
-    void sync(const std::string& name, T& value) {
+    template <typename T> void sync(const std::string& name, T& value) {
         if (contains(name)) {
             read_into(name, value);
         } else {
@@ -255,18 +220,15 @@ public:
     // READING
 
     template <typename T>
-    T read(
-        const std::string& name,
-        std::optional<T> defaultValue = std::nullopt,
-        const std::string& parent = "") {
+    T read(const std::string& name, std::optional<T> defaultValue = std::nullopt,
+           const std::string& parent = "") {
 
         if (current_file.empty()) {
             cpersist_internal::ErrorManager::get().throwError(
                 "Can't read data while no file is chosen.");
         }
 
-        std::string fullname =
-            parent.empty() ? name : parent + "." + name;
+        std::string fullname = parent.empty() ? name : parent + "." + name;
 
         if constexpr (cpersist::hasArchive<T>) {
             T object;
@@ -289,79 +251,52 @@ public:
         auto fileIt = files.find(current_file);
 
         if (fileIt == files.end()) {
-            cpersist_internal::ErrorManager::get().throwError(
-                "Current file is not loaded.");
+            cpersist_internal::ErrorManager::get().throwError("Current file is not loaded.");
         }
 
         const auto& fields = fileIt->second;
 
-        auto fieldIt =
-            std::find_if(
-                fields.begin(),
-                fields.end(),
-                [&](const Field& field) {
-                    return field.name == fullname;
-                });
+        auto fieldIt = std::find_if(fields.begin(), fields.end(),
+                                    [&](const Field& field) { return field.name == fullname; });
 
         if (fieldIt == fields.end()) {
             if (defaultValue) {
                 return *defaultValue;
             }
 
-            cpersist_internal::ErrorManager::get().throwError(
-                "Entry \"" + fullname + "\" not found.");
+            cpersist_internal::ErrorManager::get().throwError("Entry \"" + fullname +
+                                                              "\" not found.");
         }
 
-        std::stringstream stream(
-            std::string(
-                reinterpret_cast<const char*>(
-                    fieldIt->value.data()),
-                fieldIt->value.size()),
-            std::ios::binary | std::ios::in);
+        std::stringstream stream(std::string(reinterpret_cast<const char*>(fieldIt->value.data()),
+                                             fieldIt->value.size()),
+                                 std::ios::binary | std::ios::in);
 
         T object;
 
-        cpersist::Serializer<T>::read(
-            stream,
-            object);
+        cpersist::Serializer<T>::read(stream, object);
 
         return object;
     }
 
     template <typename T>
-    void read_into(
-        const std::string& name,
-        T& result_into,
-        std::optional<T> defaultValue = std::nullopt,
-        const std::string& parent = "") {
+    void read_into(const std::string& name, T& result_into,
+                   std::optional<T> defaultValue = std::nullopt, const std::string& parent = "") {
 
-        result_into =
-            read<T>(
-                name,
-                defaultValue,
-                parent);
+        result_into = read<T>(name, defaultValue, parent);
     }
 
     template <typename T, typename S>
-    void read_into_stream(
-        const std::string& name,
-        S& stream,
-        std::optional<T> defaultValue = std::nullopt,
-        const std::string& parent = "") {
+    void read_into_stream(const std::string& name, S& stream,
+                          std::optional<T> defaultValue = std::nullopt,
+                          const std::string& parent = "") {
 
-        stream << read<T>(
-            name,
-            defaultValue,
-            parent);
+        stream << read<T>(name, defaultValue, parent);
     }
 
-    bool contains(
-        const std::string& dataname,
-        const bool loose = true);
+    bool contains(const std::string& dataname, const bool loose = true);
 
-    bool contains(
-        const std::initializer_list<std::string>& datanames,
-        const bool loose = true);
+    bool contains(const std::initializer_list<std::string>& datanames, const bool loose = true);
 
     // COMMIT
 
@@ -381,19 +316,14 @@ public:
 
     // SETTERS
 
-    void set_file_extension(
-        const std::string& new_extension);
+    void set_file_extension(const std::string& new_extension);
 
-    void set_encryption_key(
-        const std::string& key);
+    void set_encryption_key(const std::string& key);
 
-    void enable_encryption(
-        const bool enable);
+    void enable_encryption(const bool enable);
 
-    void enable_autocommit_on_exit(
-        const bool enable);
+    void enable_autocommit_on_exit(const bool enable);
 };
-
 
 // Archive implementations.
 //
@@ -401,25 +331,10 @@ public:
 // These now use the SaveManager instance that owns the Archive.
 // There is NO global saveMgr anymore.
 
-template <typename T>
-void WriteArchive::operator()(
-    const std::string& key,
-    T& value) {
-
-    manager.write(
-        key,
-        value,
-        parent);
+template <typename T> void WriteArchive::operator()(const std::string& key, T& value) {
+    manager.write(key, value, parent);
 }
 
-template <typename T>
-void ReadArchive::operator()(
-    const std::string& key,
-    T& value) {
-
-    value =
-        manager.read<T>(
-            key,
-            std::nullopt,
-            parent);
+template <typename T> void ReadArchive::operator()(const std::string& key, T& value) {
+    value = manager.read<T>(key, std::nullopt, parent);
 }
