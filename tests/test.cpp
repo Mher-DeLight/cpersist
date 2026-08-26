@@ -3,22 +3,30 @@
 #include <iostream>
 
 TEST(CPersist, IOWorks) {
-    saveMgr.enable_encryption(true);
-    saveMgr.set_encryption_key("myencryptionkey");
+    SaveManager saveManager;
 
-    saveMgr.open("myfile");
+    saveManager.enable_encryption(true);
+    saveManager.set_encryption_key("myencryptionkey");
 
-    saveMgr.write("number", 3);
-    saveMgr.commit();
+    saveManager.open("myfile");
 
-    int mynumber = saveMgr.read<int>("number");
+    saveManager.write("number", 3);
+    saveManager.commit();
+
+    int mynumber = saveManager.read<int>("number");
     EXPECT_EQ(mynumber, 3);
 
     mynumber = 0;
-    saveMgr.read_into("number", mynumber);
+
+    saveManager.read_into("number", mynumber);
+
     EXPECT_EQ(mynumber, 3);
 
     std::stringstream stream;
-    saveMgr.read_into_stream<int>("number", stream);
+
+    saveManager.read_into_stream<int>(
+        "number",
+        stream);
+
     EXPECT_EQ(stream.str(), "3");
 }

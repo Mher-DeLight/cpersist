@@ -14,41 +14,31 @@ cpersist is currently in a very early stage, meaning features are minimal. Curre
 * Customize the file format used for storage.
 * Customize how files are read and written.
 * Lightweight with minimal dependencies.
-* Custom writing and loading for custom classes
-* Simple and beginner friendly API.
+* Custom writing and loading for custom classes.
+* Simple and beginner-friendly API.
 
 ## Example
 
-```cpp
-saveMgr.open("playerdata");
-int high_score = 10;
-if (!saveMgr.contains("highscore")) {
-    saveMgr.write("highscore", high_score); // save if not saved already
-    saveMgr.commit();
-} else {
-    high_score = saveMgr.read<int>("highscore");
-}
-```
-Or, its equivalent:
-```cpp
-saveMgr.open("playerdata");
-int high_score = 10;
-saveMgr.sync("highscore", highscore);
-saveMgr.commit();
-```
+Create a `SaveManager` instance and use it to manage your save data:
 
-## Installation
-Installing cpersist is a simple process. Go to your project directory, and make a folder called "external" if it doesn't already exist. Then, go into the folder and run
-```bash
-git clone https://www.github.com/Mher-DeLight/cpersist
-```
-Then go to your project's CMakeLists.txt, which is on the same level as "extern," and add:
-```cmake
-add_subdirectory(external/cpersist)
-target_link_libraries(projectname PRIVATE cpersist)
-```
-Then in your C++ file, you can do:
 ```cpp
-#include <cpersist.h>
-```
-Then you can use cpersist.
+SaveManager saveManager;
+
+saveManager.open("playerdata");
+
+int high_score = 10;
+
+if (!saveManager.contains("highscore")) {
+    saveManager.write("highscore", high_score);
+    saveManager.commit();
+} else {
+    high_score = saveManager.read<int>("highscore");
+}
+## Installation
+
+Installing cpersist is a simple process.
+
+Go to your project directory and create a folder called `external` if it doesn't already exist. Then, go into the folder and run:
+
+```bash
+git clone https://github.com/Mher-DeLight/cpersist
