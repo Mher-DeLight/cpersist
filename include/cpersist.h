@@ -18,6 +18,8 @@
 #include <unordered_map>
 #include <vector>
 
+constexpr char CPERSIST_MAGIC_HEADER[] = "CPERSIST_MAGIC_HEADER";
+
 // ARCHIVES
 
 class Archive {
