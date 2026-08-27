@@ -1,4 +1,12 @@
+<div align="center">
+    <img src="assets/logo.svg" style="width: 150px; height: 150px;">
+</div>
+
+<div align="center">
+    
 # cpersist
+    
+</div>
 
 **cpersist** is a lightweight C++ library for saving and loading data between runs of your program. Instead of writing file handling code every time you need persistent storage, cpersist provides a simple interface for storing values under labels and retrieving them later.
 
