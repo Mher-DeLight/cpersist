@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="1000mm"
+   height="1000mm"
+   viewBox="0 0 1000 1000"
+   version="1.1"
+   id="svg1"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs1" />
+  <g
+     id="layer1">
+    <rect
+       style="fill:#0000ff;fill-opacity:1;stroke-width:0.217137"
+       id="rect2"
+       width="1001.2112"
+       height="1005.7015"
+       x="1.8039874"
+       y="2.7253981" />
+    <g
+       id="g10"
+       transform="rotate(15,-1990.4606,304.5558)">
+      <rect
+         style="fill:#ffffff;stroke-width:0.264583"
+         id="rect6"
+         width="636.80634"
+         height="636.80634"
+         x="-96.027946"
+         y="-754.66156"
+         transform="rotate(45)" />
+      <rect
+         style="fill:#ffffff;stroke-width:0.264583"
+         id="rect7"
+         width="636.80634"
+         height="636.80634"
+         x="-469.64142"
+         y="-784.1275"
+         transform="rotate(90)" />
+      <rect
+         style="fill:#ffffff;stroke-width:0.264583"
+         id="rect8"
+         width="636.80634"
+         height="636.80634"
+         x="-343.94977"
+         y="-807.40161"
+         transform="rotate(75)" />
+      <rect
+         style="fill:#ffffff;stroke-width:0.264583"
+         id="rect9"
+         width="636.80634"
+         height="636.80634"
+         x="-585.02643"
+         y="-729.11493"
+         transform="rotate(105)" />
+      <rect
+         style="fill:#ffffff;stroke-width:0.264583"
+         id="rect10"
+         width="636.80634"
+         height="636.80634"
+         x="-682.24146"
+         y="-646.11304"
+         transform="rotate(120)" />
+    </g>
+    <g
+       id="g5"
+       transform="translate(34.275706,651.23824)">
+      <rect
+         style="fill:#ffffff;stroke-width:0.264583"
+         id="rect1"
+         width="636.80634"
+         height="636.80634"
+         x="-96.027946"
+         y="-754.66156"
+         transform="rotate(45)" />
+      <rect
+         style="fill:#ffffff;stroke-width:0.264583"
+         id="rect1-3"
+         width="636.80634"
+         height="636.80634"
+         x="-469.64142"
+         y="-784.1275"
+         transform="rotate(90)" />
+      <rect
+         style="fill:#ffffff;stroke-width:0.264583"
+         id="rect3"
+         width="636.80634"
+         height="636.80634"
+         x="-343.94977"
+         y="-807.40161"
+         transform="rotate(75)" />
+      <rect
+         style="fill:#ffffff;stroke-width:0.264583"
+         id="rect4"
+         width="636.80634"
+         height="636.80634"
+         x="-585.02643"
+         y="-729.11493"
+         transform="rotate(105)" />
+      <rect
+         style="fill:#ffffff;stroke-width:0.264583"
+         id="rect5"
+         width="636.80634"
+         height="636.80634"
+         x="-682.24146"
+         y="-646.11304"
+         transform="rotate(120)" />
+    </g>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:705.556px;line-height:0.9;font-family:'Liberation Sans';-inkscape-font-specification:'Liberation Sans, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;writing-mode:lr-tb;direction:ltr;fill:#0000ff;stroke-width:0.264583"
+       x="240.41188"
+       y="742.87939"
+       id="text1"><tspan
+         id="tspan1"
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:705.556px;font-family:'Liberation Sans';-inkscape-font-specification:'Liberation Sans, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#0000ff;stroke-width:0.264583"
+         x="240.41188"
+         y="742.87939">C</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:88.3971px;line-height:0.9;font-family:'Liberation Sans';-inkscape-font-specification:'Liberation Sans, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;letter-spacing:10.5833px;writing-mode:lr-tb;direction:ltr;fill:#0000ff;fill-opacity:1;stroke-width:0.265194"
+       x="512.03632"
+       y="524.00446"
+       id="text2"
+       transform="scale(1.0022997,0.99770557)"><tspan
+         id="tspan2"
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:88.3971px;font-family:'Liberation Sans';-inkscape-font-specification:'Liberation Sans, Bold';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;letter-spacing:10.5833px;fill:#0000ff;stroke-width:0.265194"
+         x="512.03632"
+         y="524.00446">persist</tspan></text>
+  </g>
+</svg>

@@ -4,6 +4,7 @@
 
 # Build directories
 build/
+builds/
 Build/
 cmake-build-*/
 

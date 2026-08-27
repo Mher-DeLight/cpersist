@@ -1,9 +1,16 @@
+<div align="center">
+    <a href="https://github.com/Mher-DeLight/cpersist/blob/main/README.md">
+        <img src="assets/logo.svg" style="border-radius: 10%; width: 150px; height: 150px;">
+    </a>
+</div>
+
+
 ## Contribution Guidelines
 As the repository is currently maintained by one person (hello, that's me!) there aren't any strict guidelines for contributing. I'd be really happy if you fix any bugs you can spot. Write with K&R style, and try to fit the general style of the code around it. If possible, please use clang-format, as the configuration file is provided with the project.
 
 ## Contributing Guide
 Assuming you're on GitHub, you must first fork the repository to your own account by pressing the fork button. 
-![Photo of the fork button](https://i.imgur.com/OWNTQDM.png)
+![Photo of the fork button](assets/fork-button.png)
 After that, go to the directory where you want to do your edits and run:
 ```bash
 git clone https://github.com/YOUR-GITHUB-USERNAME/cpersist
