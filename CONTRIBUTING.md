@@ -1,6 +1,6 @@
 <div align="center">
     <a href="https://github.com/Mher-DeLight/cpersist/blob/main/README.md">
-        <img src="assets/logo.svg" style="border-radius: 10%; width: 150px; height: 150px;">
+        <img src="assets/logo.svg" style="width: 150px; height: 150px;">
     </a>
 </div>
 

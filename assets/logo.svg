@@ -9,10 +9,14 @@
    id="svg1"
    xmlns="http://www.w3.org/2000/svg"
    xmlns:svg="http://www.w3.org/2000/svg">
-  <defs
-     id="defs1" />
+   <defs id="defs1">
+   <clipPath id="rounded-corners">
+      <rect x="0" y="0" width="1000" height="1000" rx="100" ry="100" />
+   </clipPath>
+   </defs>
   <g
-     id="layer1">
+     id="layer1"
+     clip-path="url(#rounded-corners)">
     <rect
        style="fill:#0000ff;fill-opacity:1;stroke-width:0.217137"
        id="rect2"
