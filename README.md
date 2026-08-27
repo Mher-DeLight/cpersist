@@ -40,14 +40,27 @@ saveMgr.commit();
 ```
 
 ## Installation
-Installing cpersist is a simple process. Go to your project directory, and make a folder called "external" if it doesn't already exist. Then, go into the folder and run
+### Latest Release
+Download the `.tar.gz` that was attached to the release. In your CMake directory, make sure you have a folder called `include/`. Inside that folder, create another folder called `cpersist/` and export the `.tar.gz` there. Then, add the following in your CMakeLists.txt:
+```
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+find_package(OpenSSL REQUIRED)
+
+target_link_libraries(your_cmake_target PRIVATE ${CMAKE_SOURCE_DIR}/include/cpersist/src/cpersist.a OpenSSL::SSL OpenSSL::Crypto)
+target_include_directories(your_cmake_target PRIVATE ${CMAKE_SOURCE_DIR}/include/cpersist/include)
+```
+### Install from Head
+Go to your project directory, and make sure you have `include/`. Then inside that folder, run:
 ```bash
 git clone https://www.github.com/Mher-DeLight/cpersist
 ```
-Then go to your project's CMakeLists.txt, which is on the same level as "extern," and add:
+Then go to your project's CMakeLists.txt, which is on the same level as the top-level `include/` and add:
 ```cmake
-add_subdirectory(external/cpersist)
-target_link_libraries(projectname PRIVATE cpersist)
+add_subdirectory(include/cpersist)
+target_link_libraries(your_cmake_target PRIVATE cpersist
 ```
 Then in your C++ file, you can do:
 ```cpp
