@@ -13,6 +13,10 @@ void SaveManager::init() {
             readFile(pair.first); // load already written data so truncate doesn't overwrite it
     }
 }
+void SaveManager::reinit() {
+    files.clear();
+    init();
+}
 void SaveManager::loadExistingFiles() {
     for (const auto& entry : std::filesystem::directory_iterator(folderName)) {
         if (entry.is_regular_file() && entry.path().extension() == fileExtension) {
