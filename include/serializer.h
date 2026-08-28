@@ -1,4 +1,5 @@
 #pragma once
+#include <array>
 #include <cstdint>
 #include <cstring>
 #include <istream>
@@ -22,6 +23,24 @@ template <typename T> struct Serializer<T, std::enable_if_t<std::is_trivially_co
         is.read(reinterpret_cast<char*>(&value), sizeof(T));
     }
 };
+
+// ===== STD::ARRAY =====
+// Non-trivial T only
+// Trivially-copyable arrays use the generic memcpy specialization
+template <typename T, size_t Size>
+struct Serializer<std::array<T, Size>, std::enable_if_t<!std::is_trivially_copyable_v<T>>> {
+    static void write(std::ostream& os, const std::array<T, Size>& value) {
+        for (const auto& element : value) {
+            Serializer<T>::write(os, element);
+        }
+    }
+    static void read(std::istream& is, std::array<T, Size>& value) {
+        for (auto& element : value) {
+            Serializer<T>::read(is, element);
+        }
+    }
+};
+
 // ===== STD::MAP =====
 template <typename Key, typename Value, typename Compare, typename Allocator>
 struct Serializer<std::map<Key, Value, Compare, Allocator>> {

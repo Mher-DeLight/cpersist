@@ -130,3 +130,45 @@ TEST(CPersist, StdMapSerialization) {
 
     std::filesystem::remove("savedata/" + filename + ".bin");
 }
+
+TEST(CPersist, StdArraySerializationTriviallyCopyable) {
+    std::array<int, 5> testArray = {10, 20, 30, 40, 50};
+    SaveManager saveManager;
+    const std::string filename = "stdarray_trivial_test";
+
+    std::filesystem::remove("savedata/" + filename + ".bin");
+
+    saveManager.open(filename);
+    saveManager.write("array", testArray);
+    saveManager.commit();
+
+    saveManager.erase("array");
+
+    saveManager.init(); // init again to read files
+
+    auto readArray = saveManager.read<std::array<int, 5>>("array");
+    EXPECT_EQ(readArray, testArray);
+
+    std::filesystem::remove("savedata/" + filename + ".bin");
+}
+
+TEST(CPersist, StdArraySerializationNonTrivial) {
+    std::array<std::string, 3> testArray = {"alpha", "beta", "gamma"};
+    SaveManager saveManager;
+    const std::string filename = "stdarray_nontrivial_test";
+
+    std::filesystem::remove("savedata/" + filename + ".bin");
+
+    saveManager.open(filename);
+    saveManager.write("array", testArray);
+    saveManager.commit();
+
+    saveManager.erase("array");
+
+    saveManager.init(); // init again to read files
+
+    auto readArray = saveManager.read<std::array<std::string, 3>>("array");
+    EXPECT_EQ(readArray, testArray);
+
+    std::filesystem::remove("savedata/" + filename + ".bin");
+}
