@@ -131,6 +131,8 @@ public:
 
     void init();
 
+    void reinit();
+
     void loadExistingFiles();
 
     bool filename_fits_standards(const std::string& filename);

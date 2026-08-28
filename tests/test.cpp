@@ -108,6 +108,29 @@ TEST(CPersist, ArchivesWork) {
     std::filesystem::remove("savedata/" + filename + ".bin");
 }
 
+TEST(CPersist, Reinit) {
+    SaveManager saveManager;
+    const std::string filename = "reinit_test";
+
+    saveManager.enable_encryption(false);
+    std::filesystem::remove("savedata/" + filename + ".bin");
+
+    saveManager.open(filename);
+    saveManager.write("persisted", 5);
+    saveManager.commit();
+    saveManager.write("unsaved", 10);
+
+    ASSERT_TRUE(saveManager.contains("unsaved"));
+
+    saveManager.reinit();
+
+    EXPECT_TRUE(saveManager.contains("persisted"));
+    EXPECT_EQ(saveManager.read<int>("persisted"), 5);
+    EXPECT_FALSE(saveManager.contains("unsaved"));
+
+    std::filesystem::remove("savedata/" + filename + ".bin");
+}
+
 TEST(CPersist, StdMapSerialization) {
     std::map<std::string, int> testMap = {{"one", 1}, {"two", 2}, {"three", 3}};
     SaveManager saveManager;
