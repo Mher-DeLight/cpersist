@@ -48,6 +48,22 @@ saveMgr.commit();
 ```
 
 ## Installation
+### Quick Installation
+Go to the top level of your repository, where `include/` is, and run this command:
+```bash
+curl -fsSL https://raw.githubusercontent.com/Mher-DeLight/cpersist/main/install.sh | sh
+```
+Then add the lines that the output tells you to add to your CMakeLists.txt, which are:
+```cmake
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+find_package(OpenSSL REQUIRED)
+target_link_libraries(your_cmake_target PRIVATE ${CMAKE_SOURCE_DIR}/include/cpersist/src/cpersist.a OpenSSL::SSL OpenSSL::Crypto)
+target_include_directories(your_cmake_target PRIVATE ${CMAKE_SOURCE_DIR}/include/cpersist/include)
+```
+Note that this method is currently only supported for x86-64 Linux.
 ### Latest Release
 Download the `.tar.gz` that was attached to the release. In your CMake directory, make sure you have a folder called `include/`. Inside that folder, create another folder called `cpersist/` and export the `.tar.gz` there. Then, add the following in your CMakeLists.txt:
 ```
