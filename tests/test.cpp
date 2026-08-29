@@ -8,7 +8,6 @@ TEST(Cpersist, FileBufferWorks) {
 
     EXPECT_EQ(file.read<int>("mynumber", 3), 3);
 }
-
 TEST(Cpersist, CommitWorks) {
     namespace fs = std::filesystem;
     auto file = cpersist::File("commit_works", "bin");
@@ -18,7 +17,6 @@ TEST(Cpersist, CommitWorks) {
     EXPECT_TRUE(fs::exists(fs::path(cpersist::folderName) / "commit_works.bin"));
     fs::remove("savedata/commit_works.bin");
 }
-
 TEST(Cpersist, InitWorks) {
     namespace fs = std::filesystem;
     {
@@ -32,7 +30,6 @@ TEST(Cpersist, InitWorks) {
     }
     fs::remove("savedata/init_works.bin");
 }
-
 TEST(Cpersist, EncryptionWorks) {
     namespace fs = std::filesystem;
     {
@@ -51,7 +48,6 @@ TEST(Cpersist, EncryptionWorks) {
     }
     fs::remove("savedata/encr_works.bin");
 }
-
 TEST(Cpersist, ContainsWorks) {
     namespace fs = std::filesystem;
     {
@@ -75,7 +71,6 @@ TEST(Cpersist, ContainsWorks) {
     }
     fs::remove("savedata/contains_works.bin");
 }
-
 TEST(Cpersist, AutocommitWorks) {
     namespace fs = std::filesystem;
     {
@@ -91,7 +86,6 @@ TEST(Cpersist, AutocommitWorks) {
     }
     fs::remove("savedata/autocommit_works.bin");
 }
-
 TEST(Cpersist, EraseWorks) {
     namespace fs = std::filesystem;
     {
