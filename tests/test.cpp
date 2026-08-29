@@ -120,6 +120,7 @@ TEST(Cpersist, CopyingWorks) {
     EXPECT_TRUE(file2.contains("mynumber"));
 
     file2.write("foo", 5);
+    EXPECT_EQ(file2.read<int>("mynumber"), 3);
     EXPECT_TRUE(file2.contains("mynumber"));
     EXPECT_TRUE(file2.contains("foo"));
 
