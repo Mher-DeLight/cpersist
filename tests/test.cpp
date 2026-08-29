@@ -111,3 +111,18 @@ TEST(Cpersist, EraseWorks) {
         EXPECT_FALSE(file.contains({"num1", "num2"}));
     }
 }
+TEST(Cpersist, CopyingWorks) {
+    namespace fs = std::filesystem;
+    auto file1 = cpersist::File("copying1");
+    file1.write("mynumber", 3);
+
+    auto file2 = cpersist::CopyFile(file1);
+    EXPECT_TRUE(file2.contains("mynumber"));
+
+    file2.write("foo", 5);
+    EXPECT_TRUE(file2.contains("mynumber"));
+    EXPECT_TRUE(file2.contains("foo"));
+
+    EXPECT_TRUE(file1.contains("mynumber"));
+    EXPECT_FALSE(file1.contains("foo"));
+}

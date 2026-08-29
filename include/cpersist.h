@@ -53,6 +53,8 @@ public:
     template <typename T> void operator()(const std::string& key, T& value);
 };
 
+// CONCEPTS, FIELDS, FILES, AND IMPLEMENTATIONS & OTHERS
+
 #pragma region concepts
 template <typename T>
 concept hasWrite = requires(T& t, const std::string& parent) { t.write(parent); };
@@ -195,6 +197,8 @@ public:
 
     void commit();
 };
+
+File CopyFile(File& file);
 
 template <typename T> void WriteArchive::operator()(const std::string& key, T& value) {
     owner.write(key, value, parent);

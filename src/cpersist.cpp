@@ -28,6 +28,7 @@ std::vector<uint8_t> generateKeyFromString(const std::string& str) {
     return key;
 }
 
+#pragma region file
 // == PUBLIC ==
 void File::commit() {
     fs::path fullFilePath = (fs::path(folderName) / fs::path(filename + "." + extension));
@@ -244,4 +245,12 @@ std::vector<byte> File::readFileAsBinary() {
 
     return bytes;
 }
+#pragma endregion
+#pragma region global_functions
+File CopyFile(File& file) {
+    return file; // automatically copies. thanks, c++.
+}
+
+#pragma endregion
+
 } // namespace cpersist
