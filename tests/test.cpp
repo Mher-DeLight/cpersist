@@ -194,3 +194,22 @@ TEST(Cpersist, ReadIntoWorks) {
     EXPECT_TRUE(file.contains("num"));
     EXPECT_EQ(mynumber, 5);
 }
+struct mystruct {
+    int number = 0;
+
+    template <typename Archive> void archive(Archive& ar) {
+        ar("number", number);
+    }
+};
+TEST(Cpersist, ArchivesWork) {
+    namespace fs = std::filesystem;
+    auto file = cpersist::File("archives_work");
+    mystruct obj(3);
+    file.write("obj", obj);
+    file.commit();
+
+    file.refresh();
+
+    EXPECT_EQ(file.read<mystruct>("obj").number, 3);
+    fs::remove("savedata/archives_work.bin");
+}
