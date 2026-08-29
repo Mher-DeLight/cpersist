@@ -514,5 +514,20 @@ std::vector<byte> File::readFileAsBinary() {
 
     return bytes;
 }
+bool File::contains(const std::string& fieldname, bool loose) {
+    auto fieldIt = std::find_if(fields.begin(), fields.end(), [&](const Field& field) {
+        return (field.name == fieldname) || (field.name.starts_with(fieldname + ".") && loose);
+    });
+
+    return fieldIt != fields.end();
+}
+bool File::contains(const std::initializer_list<std::string>& fieldnames, const bool loose) {
+    for (const auto& dataname : fieldnames) {
+        if (!contains(dataname))
+            return false;
+    }
+
+    return true;
+}
 
 } // namespace cpersist

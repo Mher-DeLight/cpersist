@@ -217,6 +217,7 @@ public:
         init();
     }
 
+    // === GETTERS/SETTERS ===
     void enable_encryption(const std::string& key = "") {
         encryptionEnabled = true;
         encryptionKey = generateKeyFromString(key);
@@ -228,8 +229,12 @@ public:
         init();
     }
 
+    // === OTHER ===
     void refresh();
+    bool contains(const std::string& fieldnames, bool loose = true);
+    bool contains(const std::initializer_list<std::string>& fieldname, bool loose = true);
 
+    // === TEMPLATES ===
     template <typename T>
     void write(const std::string& fieldname, const T& fieldvalue, const std::string& parent = "") {
         std::string fullname = parent.empty() ? fieldname : parent + "." + fieldname;

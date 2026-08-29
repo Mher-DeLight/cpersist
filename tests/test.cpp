@@ -51,3 +51,27 @@ TEST(Cpersist, EncryptionWorks) {
     }
     fs::remove("savedata/encr_works.bin");
 }
+
+TEST(Cpersist, ContainsWorks) {
+    namespace fs = std::filesystem;
+    {
+        auto file = cpersist::File("contains_works");
+        file.write("number", 3);
+        file.write("othernumber", 5);
+        EXPECT_TRUE(file.contains("number"));
+        EXPECT_TRUE(file.contains({"number", "othernumber"}));
+        EXPECT_TRUE(file.contains({"othernumber", "number"}));
+        EXPECT_FALSE(file.contains("randomstring"));
+        EXPECT_FALSE(file.contains({"foo", "boo"}));
+        file.commit();
+    }
+    {
+        auto file = cpersist::File("contains_works");
+        EXPECT_TRUE(file.contains("number"));
+        EXPECT_TRUE(file.contains({"number", "othernumber"}));
+        EXPECT_TRUE(file.contains({"othernumber", "number"}));
+        EXPECT_FALSE(file.contains("randomstring"));
+        EXPECT_FALSE(file.contains({"foo", "boo"}));
+    }
+    fs::remove("savedata/contains_works.bin");
+}
