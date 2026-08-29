@@ -194,6 +194,7 @@ using byte = uint8_t;
 class File {
 private:
     bool encryptionEnabled = false;
+    bool autocommit_on_destroy = false;
     std::vector<byte> encryptionKey = std::vector<byte>{};
     std::vector<Field> fields;
 
@@ -216,6 +217,10 @@ public:
             encryptionEnabled = false;
         init();
     }
+    ~File() {
+        if (autocommit_on_destroy)
+            commit();
+    }
 
     // === GETTERS/SETTERS ===
     void enable_encryption(const std::string& key = "") {
@@ -227,6 +232,9 @@ public:
         encryptionEnabled = false;
         encryptionKey = std::vector<byte>();
         init();
+    }
+    void enable_autocommit_on_destroy(bool enable) {
+        autocommit_on_destroy = enable;
     }
 
     // === OTHER ===

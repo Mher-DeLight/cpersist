@@ -75,3 +75,19 @@ TEST(Cpersist, ContainsWorks) {
     }
     fs::remove("savedata/contains_works.bin");
 }
+
+TEST(Cpersist, AutocommitWorks) {
+    namespace fs = std::filesystem;
+    {
+        auto file = cpersist::File("autocommit_works");
+        file.enable_autocommit_on_destroy(true);
+        file.write("number", 3);
+        file.write("othernumber", 5);
+    }
+    {
+        auto file = cpersist::File("autocommit_works");
+        EXPECT_TRUE(file.contains("number"));
+        EXPECT_TRUE(file.contains({"number", "othernumber"}));
+    }
+    fs::remove("savedata/autocommit_works.bin");
+}
