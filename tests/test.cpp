@@ -149,7 +149,7 @@ TEST(Cpersist, MergeWorks) {
 }
 TEST(Cpersist, StashesWork) {
     struct mystruct {
-        int number = 5;
+        int number = 0;
         bool callDestruct = true;
         mystruct(int number_) : number(number_) {}
         ~mystruct() noexcept(false) {
@@ -158,9 +158,15 @@ TEST(Cpersist, StashesWork) {
         }
     };
 
-    { cpersist::Stash<mystruct> obj("obj", 3); }
-    mystruct* obj = cpersist::LoadStash<mystruct>("obj");
-    EXPECT_NE(obj, nullptr);
-    EXPECT_EQ(obj->number, 3);
-    obj->callDestruct = false;
+    { cpersist::Stash<mystruct> foo("foo", 7); }
+    mystruct* foo = cpersist::LoadStash<mystruct>("foo");
+    EXPECT_NE(foo, nullptr);
+    EXPECT_EQ(foo->number, 7);
+    foo->callDestruct = false;
+
+    { cpersist::Stash<mystruct*> bar("bar", new mystruct(3)); }
+    mystruct* bar = *cpersist::LoadStash<mystruct*>("bar");
+    EXPECT_NE(bar, nullptr);
+    EXPECT_EQ(bar->number, 3);
+    bar->callDestruct = false;
 }
