@@ -3,6 +3,7 @@
 #include <iostream>
 
 namespace cpersist {
+using byte = uint8_t;
 std::vector<uint8_t> generateKeyFromString(const std::string& str) {
 
     constexpr uint64_t seeds[4] = {0x243F6A8885A308D3ULL, 0x13198A2E03707344ULL,
@@ -110,6 +111,11 @@ void File::erase(const std::string& fieldname) {
 void File::erase(const std::initializer_list<std::string>& fieldnames) {
     for (auto& fieldname : fieldnames) {
         erase(fieldname);
+    }
+}
+void File::merge(File& other) {
+    for (auto& field : other.fields) {
+        write_bytes(field.name, field.value);
     }
 }
 
@@ -244,6 +250,32 @@ std::vector<byte> File::readFileAsBinary() {
     }
 
     return bytes;
+}
+void File::write_bytes(const std::string& fieldname, const std::vector<byte>& fieldvalue,
+                       const std::string& parent) {
+    std::string fullname = parent.empty() ? fieldname : parent + "." + fieldname;
+    std::stringstream dataStream(std::ios::in | std::ios::out | std::ios::binary);
+
+    for (auto& bt : fieldvalue) {
+        Serializer<byte>::write(dataStream, bt); // emit directly
+    }
+
+    dataStream.seekg(0, std::ios::end);
+    if (dataStream.tellg() == std::streampos(-1)) {
+        cpersist_internal::ErrorManager::get().throwError("Serialization failed.");
+    }
+    std::string dataString = dataStream.str();
+    std::vector<uint8_t> serialized(dataString.begin(), dataString.end());
+
+    for (auto& fd : fields) {
+        if (fd.name == fullname) {
+            fd.value = serialized;
+            return;
+        }
+    }
+
+    Field field(fullname, serialized);
+    fields.push_back(field);
 }
 #pragma endregion
 #pragma region global_functions

@@ -127,3 +127,23 @@ TEST(Cpersist, CopyingWorks) {
     EXPECT_TRUE(file1.contains("mynumber"));
     EXPECT_FALSE(file1.contains("foo"));
 }
+TEST(Cpersist, MergeWorks) {
+    namespace fs = std::filesystem;
+    auto file1 = cpersist::File("file1");
+    file1.write("a", 3);
+    file1.write("b", 1);
+    {
+        auto file2 = cpersist::File("file2");
+        file2.write("b", 5);
+        file2.write("c", 7);
+        file1.merge(file2);
+    }
+
+    EXPECT_TRUE(file1.contains("a"));
+    EXPECT_TRUE(file1.contains("b"));
+    EXPECT_TRUE(file1.contains("c"));
+
+    EXPECT_EQ(file1.read<int>("a"), 3);
+    EXPECT_EQ(file1.read<int>("b"), 5);
+    EXPECT_EQ(file1.read<int>("c"), 7);
+}

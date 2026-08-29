@@ -127,6 +127,7 @@ public:
     bool contains(const std::initializer_list<std::string>& fieldnames, bool loose = true);
     void erase(const std::string& filedname);
     void erase(const std::initializer_list<std::string>& fieldnames);
+    void merge(File& other);
 
     // === TEMPLATES ===
     template <typename T>
@@ -159,6 +160,9 @@ public:
         Field field(fullname, serialized);
         fields.push_back(field);
     }
+
+    void write_bytes(const std::string& fieldname, const std::vector<byte>& fieldvalue,
+                     const std::string& parent = "");
 
     template <typename T>
     T read(const std::string& fieldname, std::optional<T> defaultValue = std::nullopt,
