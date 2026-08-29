@@ -220,6 +220,12 @@ public:
         }
     }
     void commit();
+
+    template <typename T>
+    void read_into(const std::string& fieldname, T& result,
+                   std::optional<T> defaultValue = std::nullopt, const std::string& parent = "") {
+        result = read<T>(fieldname);
+    }
 };
 template <typename T> class Stash {
 public:

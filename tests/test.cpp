@@ -180,5 +180,17 @@ TEST(Cpersist, SyncWorks) {
     mynumber = 7;
     file.sync("num", mynumber);
     EXPECT_TRUE(file.contains("num"));
+    EXPECT_EQ(mynumber, 5);
+}
+TEST(Cpersist, ReadIntoWorks) {
+    auto file = cpersist::File("readinto_works");
+    int mynumber = 5;
+    file.write("num", mynumber);
+    EXPECT_TRUE(file.contains("num"));
     EXPECT_EQ(file.read<int>("num"), 5);
+
+    mynumber = 13;
+    file.read_into("num", mynumber);
+    EXPECT_TRUE(file.contains("num"));
+    EXPECT_EQ(mynumber, 5);
 }
