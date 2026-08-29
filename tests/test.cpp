@@ -197,6 +197,7 @@ TEST(Cpersist, ReadIntoWorks) {
 struct mystruct {
     int number = 0;
     mystruct(int number_) : number(number_) {}
+    mystruct() = default;
 
     template <typename Archive> void archive(Archive& ar) {
         ar("number", number);
