@@ -147,3 +147,20 @@ TEST(Cpersist, MergeWorks) {
     EXPECT_EQ(file1.read<int>("b"), 5);
     EXPECT_EQ(file1.read<int>("c"), 7);
 }
+TEST(Cpersist, StashesWork) {
+    struct mystruct {
+        int number = 5;
+        bool callDestruct = true;
+        mystruct(int number_) : number(number_) {}
+        ~mystruct() noexcept(false) {
+            if (callDestruct)
+                throw std::runtime_error("destructor called!");
+        }
+    };
+
+    { cpersist::Stash<mystruct> obj("obj", 3); }
+    mystruct* obj = cpersist::LoadStash<mystruct>("obj");
+    EXPECT_NE(obj, nullptr);
+    EXPECT_EQ(obj->number, 3);
+    obj->callDestruct = false;
+}

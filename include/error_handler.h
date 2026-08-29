@@ -12,7 +12,7 @@ public:
 
     void throwError(const std::string& error_message);
     void assert(const bool& condition, const char* error_message);
-    void throwWarning(const char* warning_message);
+    void throwWarning(const std::string& warning_message);
 
     ErrorManager(const ErrorManager&) = delete;
     ErrorManager& operator=(const ErrorManager&) = delete;

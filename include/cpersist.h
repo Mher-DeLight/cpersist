@@ -13,8 +13,10 @@
 #include <ostream>
 #include <span>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <type_traits>
+#include <typeindex>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -26,6 +28,16 @@ namespace fs = std::filesystem;
 constexpr char CPERSIST_MAGIC_HEADER[] = "CPERSIST_MAGIC_HEADER";
 constexpr std::string folderName = "savedata";
 std::vector<uint8_t> generateKeyFromString(const std::string& s);
+
+namespace internal {
+
+struct StashedObject {
+    void* object;
+    std::type_index type;
+};
+inline std::map<std::string, StashedObject> stashMap;
+
+} // namespace internal
 
 // ARCHIVES
 
@@ -202,9 +214,33 @@ public:
     void commit();
 };
 template <typename T> class Stash {
-private:
-    T* object;
+public:
+    template <typename... Args> explicit Stash(const std::string& name, Args&&... args) {
+        if (internal::stashMap.contains(name)) {
+            throw std::runtime_error("A stash already exists with the name \"" + name + "\"");
+        }
+
+        T* object = new T(std::forward<Args>(args)...);
+
+        internal::stashMap.emplace(
+            name, internal::StashedObject{static_cast<void*>(object), std::type_index(typeid(T))});
+    }
+
+    ~Stash() = default;
 };
+template <typename T> T* LoadStash(const std::string& name) {
+    auto it = internal::stashMap.find(name);
+
+    if (it == internal::stashMap.end()) {
+        throw std::runtime_error("No stash exists with the name \"" + name + "\"");
+    }
+
+    if (it->second.type != std::type_index(typeid(T))) {
+        throw std::runtime_error("Stash \"" + name + "\" has the wrong type");
+    }
+
+    return static_cast<T*>(it->second.object);
+}
 
 File CopyFile(File& file);
 

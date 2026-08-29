@@ -14,6 +14,6 @@ void cpersist::internal::ErrorManager::assert(const bool& condition, const char*
     std::cerr << "[CPERSIST ASSERT] " << error_message << std::endl;
     abort();
 }
-void cpersist::internal::ErrorManager::throwWarning(const char* warning_message) {
+void cpersist::internal::ErrorManager::throwWarning(const std::string& warning_message) {
     std::cerr << "[CPERSIST WARNING] " << warning_message << std::endl;
 }
