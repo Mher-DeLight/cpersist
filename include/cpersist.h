@@ -22,12 +22,11 @@
 #include <vector>
 
 namespace cpersist_internal {
-
 std::vector<uint8_t> hashString(const std::string& s);
-
 } // namespace cpersist_internal
 
 namespace cpersist {
+
 namespace fs = std::filesystem;
 constexpr char CPERSIST_MAGIC_HEADER[] = "CPERSIST_MAGIC_HEADER";
 constexpr std::string folderName = "savedata";
@@ -45,14 +44,12 @@ protected:
 public:
     Archive(std::string parent, File& owner_) : parent(std::move(parent)), owner(owner_) {}
 };
-
 class WriteArchive : public Archive {
 public:
     using Archive::Archive;
 
     template <typename T> void operator()(const std::string& key, T& value);
 };
-
 class ReadArchive : public Archive {
 public:
     using Archive::Archive;
@@ -196,21 +193,34 @@ public:
     void enable_autocommit_on_exit(const bool enable);
 };
 
+using byte = uint8_t;
 class File {
-public:
-    const std::string filename;
-    const std::string extension = ".bin";
+private:
     bool encryptionEnabled = false;
     std::vector<Field> fields;
+
+    void init();
+    void loadFile();
+    std::vector<Field> parseFile();
+    bool isDiskFileEncrypted();
+    std::vector<byte> readFileAsBinary();
+
+public:
+    const std::string filename;
+    const std::string extension = "bin";
+
     File(const std::string& filename_, bool encryptionEnabled_ = false,
-         const std::string& extension_ = ".bin",
+         const std::string& extension_ = "bin",
          const std::vector<Field>& fields_ = std::vector<Field>{})
         : filename(filename_), encryptionEnabled(encryptionEnabled_), extension(extension_),
-          fields(fields_) {}
+          fields(fields_) {
+        init();
+    }
 
     void enable_encryption(bool enable) {
         encryptionEnabled = enable;
     }
+    void refresh();
 
     template <typename T>
     void write(const std::string& fieldname, const T& fieldvalue, const std::string& parent = "") {

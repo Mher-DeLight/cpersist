@@ -8,11 +8,6 @@ void SaveManager::init() {
 
     files.clear();
     loadExistingFiles();
-
-    for (auto& pair : files) {
-        files[pair.first] =
-            readFile(pair.first); // load already written data so truncate doesn't overwrite it
-    }
 }
 void SaveManager::reinit() {
     files.clear();
@@ -123,11 +118,6 @@ void SaveManager::ensure_exists(std::vector<std::string> filenames) {
 // WRITING / READING
 uint64_t SaveManager::getDataPosition(const std::string& name, const bool loose) {
     std::vector<uint8_t> data;
-    try {
-        data = readFileAsBinary(current_file);
-    } catch (std::exception& e) {
-        return -1;
-    }
     uint64_t position = 0; // encryption flag is already skipped
 
     while (position < data.size()) {
@@ -176,36 +166,6 @@ uint64_t SaveManager::getDataPosition(const std::string& name, const bool loose)
 
     return -1;
 }
-std::vector<uint8_t> SaveManager::readFileAsBinary(const std::string& filename) {
-    bool fileEncr = isFileEncrypted(filename);
-    std::filesystem::path customFilePath =
-        std::filesystem::path(folderName) / (filename + fileExtension);
-    std::ifstream file(customFilePath, std::ios::binary);
-
-    if (!file) {
-        cpersist_internal::ErrorManager::get().throwError("Failed to open file: " + filename +
-                                                          fileExtension);
-    }
-
-    // Find the file's size
-    file.seekg(0, std::ios::end);
-    std::streamsize size = file.tellg();
-    file.seekg(0, std::ios::beg);
-
-    // then read it
-    std::vector<uint8_t> bytes(size);
-    if (!file.read(reinterpret_cast<char*>(bytes.data()), size)) {
-        cpersist_internal::ErrorManager::get().throwError("Cannot read data file " + filename +
-                                                          fileExtension);
-    }
-    bytes.erase(bytes.begin(), bytes.begin() + sizeof(CPERSIST_MAGIC_HEADER));
-
-    if (fileEncr) {
-        bytes = encrMgr.decrypt(bytes);
-    }
-
-    return bytes;
-}
 bool SaveManager::contains(const std::string& dataname, const bool loose) {
     auto fileIt = files.find(current_file);
     if (fileIt == files.end()) {
@@ -239,97 +199,6 @@ bool SaveManager::contains(const std::initializer_list<std::string>& datanames, 
     }
 
     return true;
-}
-bool SaveManager::isFileEncrypted(const std::string& filename) {
-    std::filesystem::path curFp =
-        filename.empty() ? fullFilePath
-                         : (std::filesystem::path(folderName) / (filename + fileExtension));
-    std::ifstream file(curFp, std::ios::binary);
-
-    if (!file) {
-        cpersist_internal::ErrorManager::get().throwError("Failed to open file: " + current_file);
-    }
-
-    std::string magicHeader(sizeof(CPERSIST_MAGIC_HEADER) - 1, '\0');
-    if (!file.read(magicHeader.data(), magicHeader.size())) {
-        cpersist_internal::ErrorManager::get().throwError("Cannot read data file " + current_file);
-    }
-
-    if (magicHeader != CPERSIST_MAGIC_HEADER) {
-        cpersist_internal::ErrorManager::get().throwError("Invalid magic header in data file " +
-                                                          current_file);
-    }
-
-    uint8_t encryptionMagicByte;
-    if (!file.read(reinterpret_cast<char*>(&encryptionMagicByte), 1)) {
-        cpersist_internal::ErrorManager::get().throwError("Cannot read data file " + current_file);
-    }
-
-    return encryptionMagicByte != 0x00;
-}
-std::vector<Field> SaveManager::readFile(const std::string& filename) {
-    if (!file_exists(filename)) {
-        cpersist_internal::ErrorManager::get().throwError("Cannot parse file \"" + filename +
-                                                          fileExtension + "\"; it is either \
-            deleted, corrupted, or not loaded into the buffer.");
-    }
-
-    if (isFileEncrypted(filename) && encrMgr.encryKeyEmpty()) {
-        return std::vector<Field>();
-    }
-
-    std::vector<uint8_t> data = readFileAsBinary(filename);
-
-    std::vector<Field> fields;
-    uint64_t position = 0;
-    while (position < data.size()) {
-        // ===== NAME
-        // check bounds
-        if (position + sizeof(uint8_t) > data.size()) {
-            cpersist_internal::ErrorManager::get().throwError("file " + filename + fileExtension +
-                                                              " is incorrectly formatted");
-        }
-
-        uint8_t nameSize;
-        std::memcpy(&nameSize, data.data() + position, sizeof(nameSize));
-        position += sizeof(nameSize);
-
-        // ===== NAME
-        // check bounds
-        if (position + nameSize > data.size()) {
-            cpersist_internal::ErrorManager::get().throwError("file " + filename + fileExtension +
-                                                              " is incorrectly formatted");
-        }
-
-        std::string currentName(reinterpret_cast<const char*>(data.data() + position), nameSize);
-        position += nameSize;
-
-        // ===== DATASIZE
-        if (position + sizeof(uint32_t) > data.size()) {
-            cpersist_internal::ErrorManager::get().throwError("file " + filename + fileExtension +
-                                                              " is incorrectly formatted");
-        }
-
-        uint32_t dataSize;
-        std::memcpy(&dataSize, data.data() + position, sizeof(dataSize));
-        position += sizeof(dataSize);
-
-        // the position now points at the data itself
-        if (position + dataSize > data.size()) {
-            cpersist_internal::ErrorManager::get().throwError("file " + filename + fileExtension +
-                                                              " is incorrectly formatted");
-        }
-
-        // copy the data into a new vector
-        std::vector<uint8_t> fieldData(data.begin() + position, data.begin() + position + dataSize);
-
-        // construct and store the field. we'll use emplace to avoid making a temporary Field object
-        fields.emplace_back(currentName, fieldData);
-
-        // Move to the next field
-        position += dataSize;
-    }
-    return fields;
 }
 
 // COMMIT
@@ -467,7 +336,7 @@ std::vector<uint8_t> hashString(const std::string& str) {
 // == NEW API ==
 namespace cpersist {
 void File::commit() {
-    fs::path fullFilePath = (fs::path(folderName) / fs::path(filename + extension));
+    fs::path fullFilePath = (fs::path(folderName) / fs::path(filename + "." + extension));
 
     std::ofstream file(
         fullFilePath,
@@ -511,4 +380,136 @@ void File::commit() {
     file.write(reinterpret_cast<const char*>(bytes.data()),
                static_cast<std::streamsize>(bytes.size()));
 }
+void File::init() {
+    std::filesystem::create_directory(folderName); // creates the folder if it doesn't exist
+
+    loadFile();
+}
+void File::refresh() {
+    init();
+}
+void File::loadFile() {
+    for (const auto& entry : std::filesystem::directory_iterator(folderName)) {
+        bool regularFile = entry.is_regular_file();
+        auto ext = entry.path().extension().string();
+        auto stem = entry.path().stem().string();
+
+        if (regularFile && ext == ("." + extension) && stem == filename) {
+            fields = parseFile();
+        }
+    }
+}
+std::vector<Field> File::parseFile() {
+    if (isDiskFileEncrypted() && encrMgr.encryKeyEmpty()) {
+        return std::vector<Field>();
+    }
+
+    std::vector<uint8_t> data = readFileAsBinary();
+
+    std::vector<Field> fields;
+    uint64_t position = 0;
+    while (position < data.size()) {
+        // ===== NAME
+        // check bounds
+        if (position + sizeof(uint8_t) > data.size()) {
+            cpersist_internal::ErrorManager::get().throwError("file " + filename + extension +
+                                                              " is incorrectly formatted");
+        }
+
+        uint8_t nameSize;
+        std::memcpy(&nameSize, data.data() + position, sizeof(nameSize));
+        position += sizeof(nameSize);
+
+        // ===== NAME
+        // check bounds
+        if (position + nameSize > data.size()) {
+            cpersist_internal::ErrorManager::get().throwError("file " + filename + extension +
+                                                              " is incorrectly formatted");
+        }
+
+        std::string currentName(reinterpret_cast<const char*>(data.data() + position), nameSize);
+        position += nameSize;
+
+        // ===== DATASIZE
+        if (position + sizeof(uint32_t) > data.size()) {
+            cpersist_internal::ErrorManager::get().throwError("file " + filename + extension +
+                                                              " is incorrectly formatted");
+        }
+
+        uint32_t dataSize;
+        std::memcpy(&dataSize, data.data() + position, sizeof(dataSize));
+        position += sizeof(dataSize);
+
+        // the position now points at the data itself
+        if (position + dataSize > data.size()) {
+            cpersist_internal::ErrorManager::get().throwError("file " + filename + extension +
+                                                              " is incorrectly formatted");
+        }
+
+        // copy the data into a new vector
+        std::vector<uint8_t> fieldData(data.begin() + position, data.begin() + position + dataSize);
+
+        // construct and store the field. we'll use emplace to avoid making a temporary Field object
+        fields.emplace_back(currentName, fieldData);
+
+        // Move to the next field
+        position += dataSize;
+    }
+    return fields;
+}
+bool File::isDiskFileEncrypted() {
+    fs::path curFp = (fs::path(folderName) / fs::path(filename + "." + extension));
+    std::ifstream file(curFp, std::ios::binary);
+    if (!file) {
+        cpersist_internal::ErrorManager::get().throwError("Failed to open file: " + filename);
+    }
+
+    std::string magicHeader(sizeof(CPERSIST_MAGIC_HEADER) - 1, '\0');
+    if (!file.read(magicHeader.data(), magicHeader.size())) {
+        cpersist_internal::ErrorManager::get().throwError("Cannot read data file " + filename);
+    }
+
+    if (magicHeader != CPERSIST_MAGIC_HEADER) {
+        cpersist_internal::ErrorManager::get().throwError("Invalid magic header in data file " +
+                                                          filename);
+    }
+
+    uint8_t encryptionMagicByte;
+    if (!file.read(reinterpret_cast<char*>(&encryptionMagicByte), 1)) {
+        cpersist_internal::ErrorManager::get().throwError("Cannot read data file " + filename);
+    }
+
+    return encryptionMagicByte != 0x00;
+}
+std::vector<byte> File::readFileAsBinary() {
+    bool fileEncr = isDiskFileEncrypted();
+    std::filesystem::path customFilePath =
+        std::filesystem::path(folderName) / (filename + "." + extension);
+    std::ifstream file(customFilePath, std::ios::binary);
+
+    if (!file) {
+        cpersist_internal::ErrorManager::get().throwError("Failed to open file: " + filename +
+                                                          extension);
+    }
+
+    // Find the file's size
+    file.seekg(0, std::ios::end);
+    std::streamsize size = file.tellg();
+    file.seekg(0, std::ios::beg);
+
+    // then read it
+    std::vector<uint8_t> bytes(size);
+    if (!file.read(reinterpret_cast<char*>(bytes.data()), size)) {
+        cpersist_internal::ErrorManager::get().throwError("Cannot read data file " + filename +
+                                                          extension);
+    }
+    bytes.erase(bytes.begin(), bytes.begin() + sizeof(CPERSIST_MAGIC_HEADER));
+
+    if (fileEncr) {
+        bytes = encrMgr.decrypt(bytes);
+    }
+
+    return bytes;
+}
+
 } // namespace cpersist
