@@ -28,7 +28,9 @@ std::vector<uint8_t> hashString(const std::string& s);
 } // namespace cpersist_internal
 
 namespace cpersist {
+namespace fs = std::filesystem;
 constexpr char CPERSIST_MAGIC_HEADER[] = "CPERSIST_MAGIC_HEADER";
+constexpr std::string folderName = "savedata";
 
 // ARCHIVES
 
@@ -196,10 +198,19 @@ public:
 
 class File {
 public:
-    std::string filename;
+    const std::string filename;
+    const std::string extension = ".bin";
+    bool encryptionEnabled = false;
     std::vector<Field> fields;
-    File(const std::string& filename_, const std::vector<Field>& fields_ = std::vector<Field>{})
-        : filename(filename_), fields(fields_) {}
+    File(const std::string& filename_, bool encryptionEnabled_ = false,
+         const std::string& extension_ = ".bin",
+         const std::vector<Field>& fields_ = std::vector<Field>{})
+        : filename(filename_), encryptionEnabled(encryptionEnabled_), extension(extension_),
+          fields(fields_) {}
+
+    void enable_encryption(bool enable) {
+        encryptionEnabled = enable;
+    }
 
     template <typename T>
     void write(const std::string& fieldname, const T& fieldvalue, const std::string& parent = "") {
@@ -266,6 +277,8 @@ public:
         cpersist::Serializer<T>::read(stream, object);
         return object;
     }
+
+    void commit();
 };
 
 // Archive implementations.
