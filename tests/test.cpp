@@ -1,197 +1,129 @@
 #include <cpersist.h>
 #include <gtest/gtest.h>
 #include <iostream>
-#include <map>
 
-TEST(CPersist, IOWorks) {
-    SaveManager saveManager;
+TEST(Cpersist, FileBufferWorks) {
+    auto file = cpersist::File("myfile");
+    file.write("mynumber", 3);
 
-    saveManager.enable_encryption(true);
-    saveManager.set_encryption_key("myencryptionkey");
-
-    saveManager.open("myfile");
-
-    saveManager.write("number", 3);
-    saveManager.commit();
-
-    int mynumber = saveManager.read<int>("number");
-    EXPECT_EQ(mynumber, 3);
-
-    mynumber = 0;
-
-    saveManager.read_into("number", mynumber);
-
-    EXPECT_EQ(mynumber, 3);
-
-    std::stringstream stream;
-    saveManager.read_into_stream<int>("number", stream);
-    EXPECT_EQ(stream.str(), "3");
-    std::filesystem::remove("savedata/myfile.bin");
+    EXPECT_EQ(file.read<int>("mynumber", 3), 3);
 }
+TEST(Cpersist, CommitWorks) {
+    namespace fs = std::filesystem;
+    auto file = cpersist::File("commit_works", "bin");
+    file.write("mynumber", 3);
+    file.commit();
 
-TEST(CPersist, InvalidMagicHeader) {
-    SaveManager saveManager;
-
-    saveManager.open("invalid_magic_header");
-    saveManager.commit();
-
-    std::filesystem::path filePath = "savedata/invalid_magic_header.bin";
-
-    std::fstream file(filePath, std::ios::in | std::ios::out | std::ios::binary);
-    ASSERT_TRUE(file.is_open());
-
-    const char invalidHeader[] = "INVALID_MAGIC_HEADER";
-    file.seekp(0);
-    file.write(invalidHeader, sizeof(invalidHeader) - 1);
-    file.close();
-
-    EXPECT_THROW(saveManager.init(), std::runtime_error);
-
-    std::filesystem::remove(filePath);
+    EXPECT_TRUE(fs::exists(fs::path(cpersist::folderName) / "commit_works.bin"));
+    fs::remove("savedata/commit_works.bin");
 }
-
-TEST(CPersist, FileExtensionLoading) {
-    SaveManager saveManager;
-    const std::string filename = "extension_loading";
-
-    saveManager.enable_encryption(false);
-    saveManager.set_file_extension("dat");
-
-    std::filesystem::remove("savedata/" + filename + ".dat");
-
-    saveManager.open(filename);
-    saveManager.write("number", 5);
-    saveManager.commit();
-
-    // Remove the field from the in-memory buffer while keeping it on disk.
-    saveManager.erase("number");
-
-    EXPECT_FALSE(saveManager.contains("number"));
-
-    // Setting the extension should reload existing files.
-    saveManager.set_file_extension("dat");
-
-    EXPECT_TRUE(saveManager.contains("number"));
-    EXPECT_EQ(saveManager.read<int>("number"), 5);
-
-    std::filesystem::remove("savedata/" + filename + ".dat");
-}
-
-struct mystruct {
-    int number = 5;
-
-    template <typename Archive> void archive(Archive& ar) {
-        ar("number", number);
+TEST(Cpersist, InitWorks) {
+    namespace fs = std::filesystem;
+    {
+        auto file = cpersist::File("init_works", "bin");
+        file.write("mynumber", 5);
+        file.commit();
     }
-    mystruct(int number_) : number(number_) {}
-    mystruct() = default;
-};
-TEST(CPersist, ArchivesWork) {
-    mystruct myobj(5);
-
-    SaveManager saveManager;
-    const std::string filename = "archive_test";
-    saveManager.enable_encryption(false);
-
-    std::filesystem::remove("savedata/" + filename + ".bin");
-
-    saveManager.open(filename);
-    saveManager.write("obj", myobj);
-    saveManager.commit();
-
-    saveManager.erase("obj");
-
-    saveManager.init(); // init again to read files
-
-    EXPECT_EQ(saveManager.read<mystruct>("obj").number, 5);
-
-    std::filesystem::remove("savedata/" + filename + ".bin");
+    {
+        auto file = cpersist::File("init_works", "bin");
+        EXPECT_EQ(file.read<int>("mynumber"), 5);
+    }
+    fs::remove("savedata/init_works.bin");
 }
-
-TEST(CPersist, Reinit) {
-    SaveManager saveManager;
-    const std::string filename = "reinit_test";
-
-    saveManager.enable_encryption(false);
-    std::filesystem::remove("savedata/" + filename + ".bin");
-
-    saveManager.open(filename);
-    saveManager.write("persisted", 5);
-    saveManager.commit();
-    saveManager.write("unsaved", 10);
-
-    ASSERT_TRUE(saveManager.contains("unsaved"));
-
-    saveManager.reinit();
-
-    EXPECT_TRUE(saveManager.contains("persisted"));
-    EXPECT_EQ(saveManager.read<int>("persisted"), 5);
-    EXPECT_FALSE(saveManager.contains("unsaved"));
-
-    std::filesystem::remove("savedata/" + filename + ".bin");
+TEST(Cpersist, EncryptionWorks) {
+    namespace fs = std::filesystem;
+    {
+        auto file = cpersist::File("encr_works", "bin", "myencryptionkey");
+        file.enable_encryption("myencryptionkey");
+        file.write("mynumber", 5);
+        file.commit();
+    }
+    {
+        auto file = cpersist::File("encr_works", "bin", "myencryptionkey");
+        EXPECT_EQ(file.read<int>("mynumber"), 5);
+    }
+    {
+        EXPECT_ANY_THROW(auto file =
+                             cpersist::File("encr_works", "bin", "myincorrectencryptionkey"));
+    }
+    fs::remove("savedata/encr_works.bin");
 }
-
-TEST(CPersist, StdMapSerialization) {
-    std::map<std::string, int> testMap = {{"one", 1}, {"two", 2}, {"three", 3}};
-    SaveManager saveManager;
-    const std::string filename = "stdmap_test";
-
-    std::filesystem::remove("savedata/" + filename + ".bin");
-
-    saveManager.open(filename);
-    saveManager.write("map", testMap);
-    saveManager.commit();
-
-    saveManager.erase("map");
-
-    saveManager.init(); // init again to read files
-
-    auto readmap = saveManager.read<std::map<std::string, int>>("map");
-    EXPECT_EQ(readmap["one"], 1);
-    EXPECT_EQ(readmap["two"], 2);
-    EXPECT_EQ(readmap["three"], 3);
-
-    std::filesystem::remove("savedata/" + filename + ".bin");
+TEST(Cpersist, ContainsWorks) {
+    namespace fs = std::filesystem;
+    {
+        auto file = cpersist::File("contains_works");
+        file.write("number", 3);
+        file.write("othernumber", 5);
+        EXPECT_TRUE(file.contains("number"));
+        EXPECT_TRUE(file.contains({"number", "othernumber"}));
+        EXPECT_TRUE(file.contains({"othernumber", "number"}));
+        EXPECT_FALSE(file.contains("randomstring"));
+        EXPECT_FALSE(file.contains({"foo", "boo"}));
+        file.commit();
+    }
+    {
+        auto file = cpersist::File("contains_works");
+        EXPECT_TRUE(file.contains("number"));
+        EXPECT_TRUE(file.contains({"number", "othernumber"}));
+        EXPECT_TRUE(file.contains({"othernumber", "number"}));
+        EXPECT_FALSE(file.contains("randomstring"));
+        EXPECT_FALSE(file.contains({"foo", "boo"}));
+    }
+    fs::remove("savedata/contains_works.bin");
 }
-
-TEST(CPersist, StdArraySerializationTriviallyCopyable) {
-    std::array<int, 5> testArray = {10, 20, 30, 40, 50};
-    SaveManager saveManager;
-    const std::string filename = "stdarray_trivial_test";
-
-    std::filesystem::remove("savedata/" + filename + ".bin");
-
-    saveManager.open(filename);
-    saveManager.write("array", testArray);
-    saveManager.commit();
-
-    saveManager.erase("array");
-
-    saveManager.init(); // init again to read files
-
-    auto readArray = saveManager.read<std::array<int, 5>>("array");
-    EXPECT_EQ(readArray, testArray);
-
-    std::filesystem::remove("savedata/" + filename + ".bin");
+TEST(Cpersist, AutocommitWorks) {
+    namespace fs = std::filesystem;
+    {
+        auto file = cpersist::File("autocommit_works");
+        file.enable_autocommit_on_destroy(true);
+        file.write("number", 3);
+        file.write("othernumber", 5);
+    }
+    {
+        auto file = cpersist::File("autocommit_works");
+        EXPECT_TRUE(file.contains("number"));
+        EXPECT_TRUE(file.contains({"number", "othernumber"}));
+    }
+    fs::remove("savedata/autocommit_works.bin");
 }
+TEST(Cpersist, EraseWorks) {
+    namespace fs = std::filesystem;
+    {
+        auto file = cpersist::File("erase_works");
+        EXPECT_ANY_THROW(file.erase("mynumber"));
+        EXPECT_FALSE(file.contains("mynumber"));
+        file.write("mynumber", 5);
+        EXPECT_TRUE(file.contains("mynumber"));
+        EXPECT_NO_THROW(file.erase("mynumber"));
+        EXPECT_FALSE(file.contains("mynumber"));
+    }
+    {
+        auto file = cpersist::File("erase_works");
+        EXPECT_ANY_THROW(file.erase({"num1", "num2"}));
 
-TEST(CPersist, StdArraySerializationNonTrivial) {
-    std::array<std::string, 3> testArray = {"alpha", "beta", "gamma"};
-    SaveManager saveManager;
-    const std::string filename = "stdarray_nontrivial_test";
+        EXPECT_FALSE(file.contains({"num1", "num2"}));
 
-    std::filesystem::remove("savedata/" + filename + ".bin");
+        file.write("num1", 5);
+        file.write("num2", 3);
 
-    saveManager.open(filename);
-    saveManager.write("array", testArray);
-    saveManager.commit();
+        EXPECT_TRUE(file.contains({"num1", "num2"}));
+        EXPECT_NO_THROW(file.erase({"num1", "num2"}));
+        EXPECT_FALSE(file.contains({"num1", "num2"}));
+    }
+}
+TEST(Cpersist, CopyingWorks) {
+    namespace fs = std::filesystem;
+    auto file1 = cpersist::File("copying1");
+    file1.write("mynumber", 3);
 
-    saveManager.erase("array");
+    auto file2 = cpersist::CopyFile(file1);
+    EXPECT_TRUE(file2.contains("mynumber"));
 
-    saveManager.init(); // init again to read files
+    file2.write("foo", 5);
+    EXPECT_EQ(file2.read<int>("mynumber"), 3);
+    EXPECT_TRUE(file2.contains("mynumber"));
+    EXPECT_TRUE(file2.contains("foo"));
 
-    auto readArray = saveManager.read<std::array<std::string, 3>>("array");
-    EXPECT_EQ(readArray, testArray);
-
-    std::filesystem::remove("savedata/" + filename + ".bin");
+    EXPECT_TRUE(file1.contains("mynumber"));
+    EXPECT_FALSE(file1.contains("foo"));
 }
