@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <iostream>
 
+namespace cpersist {
 void SaveManager::init() {
     std::filesystem::create_directory(folderName); // creates the folder if it doesn't exist
 
@@ -435,8 +436,10 @@ void SaveManager::enable_encryption(const bool enable) {
 void SaveManager::enable_autocommit_on_exit(const bool enable) {
     commitOnDestroy = enable;
 }
+} // namespace cpersist
 
-std::vector<uint8_t> cpersist_internal::hashString(const std::string& str) {
+namespace cpersist_internal {
+std::vector<uint8_t> hashString(const std::string& str) {
     constexpr uint64_t seeds[4] = {0x243F6A8885A308D3ULL, 0x13198A2E03707344ULL,
                                    0xA4093822299F31D0ULL, 0x082EFA98EC4E6C89ULL};
 
@@ -458,4 +461,5 @@ std::vector<uint8_t> cpersist_internal::hashString(const std::string& str) {
     }
 
     return key;
+}
 }

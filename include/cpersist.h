@@ -21,20 +21,27 @@
 #include <utility>
 #include <vector>
 
+namespace cpersist_internal {
+
+std::vector<uint8_t> hashString(const std::string& s);
+
+} // namespace cpersist_internal
+
+namespace cpersist {
 constexpr char CPERSIST_MAGIC_HEADER[] = "CPERSIST_MAGIC_HEADER";
 
 // ARCHIVES
 
 class SaveManager;
+class File;
 
 class Archive {
 protected:
     std::string parent;
-    SaveManager& manager;
+    File& owner;
 
 public:
-    Archive(std::string parent, SaveManager& manager)
-        : parent(std::move(parent)), manager(manager) {}
+    Archive(std::string parent, File& owner_) : parent(std::move(parent)), owner(owner_) {}
 };
 
 class WriteArchive : public Archive {
@@ -51,8 +58,6 @@ public:
     template <typename T> void operator()(const std::string& key, T& value);
 };
 
-namespace cpersist {
-
 template <typename T>
 concept hasWrite = requires(T& t, const std::string& parent) { t.write(parent); };
 
@@ -62,14 +67,6 @@ concept hasRead = requires(T& t, const std::string& parent) { t.read(parent); };
 template <typename T>
 concept hasArchive = requires(T& t, WriteArchive& war) { t.archive(war); } &&
                      requires(T& t, ReadArchive& rar) { t.archive(rar); };
-
-} // namespace cpersist
-
-namespace cpersist_internal {
-
-std::vector<uint8_t> hashString(const std::string& s);
-
-} // namespace cpersist_internal
 
 class Field {
 public:
@@ -156,55 +153,6 @@ public:
     void ensure_exists(std::vector<std::string> filenames);
 
     // WRITING
-
-    template <typename T>
-    void write(const std::string& name, const T& object, const std::string& parent = "") {
-
-        if (current_file.empty()) {
-            cpersist_internal::ErrorManager::get().throwError(
-                "Can't write data while no file is chosen.");
-        }
-
-        std::string fullname = parent.empty() ? name : parent + "." + name;
-
-        std::stringstream dataStream(std::ios::in | std::ios::out | std::ios::binary);
-
-        if constexpr (cpersist::hasArchive<T>) {
-            WriteArchive ar(fullname, *this);
-            const_cast<T&>(object).archive(ar);
-            return;
-        }
-
-        if constexpr (cpersist::hasWrite<T>) {
-            const_cast<T&>(object).write(fullname);
-            return;
-        } else {
-            cpersist::Serializer<T>::write(dataStream, object);
-        }
-
-        dataStream.seekg(0, std::ios::end);
-
-        if (dataStream.tellg() == std::streampos(-1)) {
-            cpersist_internal::ErrorManager::get().throwError("Serialization failed.");
-        }
-
-        std::string dataString = dataStream.str();
-
-        std::vector<uint8_t> serialized(dataString.begin(), dataString.end());
-
-        if (file_exists(current_file)) {
-            for (auto& fd : files[current_file]) {
-                if (fd.name == fullname) {
-                    fd.value = serialized;
-                    return;
-                }
-            }
-        }
-
-        Field field(fullname, serialized);
-        files[current_file].push_back(field);
-    }
-
     uint64_t getDataPosition(const std::string& name, const bool loose = false);
 
     std::vector<uint8_t> readFileAsBinary(const std::string& filename);
@@ -213,90 +161,7 @@ public:
 
     void erase(const std::string& fieldname);
 
-    template <typename T> void sync(const std::string& name, T& value) {
-        if (contains(name)) {
-            read_into(name, value);
-        } else {
-            write(name, value);
-        }
-    }
-
     // READING
-
-    template <typename T>
-    T read(const std::string& name, std::optional<T> defaultValue = std::nullopt,
-           const std::string& parent = "") {
-
-        if (current_file.empty()) {
-            cpersist_internal::ErrorManager::get().throwError(
-                "Can't read data while no file is chosen.");
-        }
-
-        std::string fullname = parent.empty() ? name : parent + "." + name;
-
-        if constexpr (cpersist::hasArchive<T>) {
-            T object;
-
-            ReadArchive ar(fullname, *this);
-
-            object.archive(ar);
-
-            return object;
-        }
-
-        if constexpr (cpersist::hasRead<T>) {
-            T object;
-
-            object.read(fullname);
-
-            return object;
-        }
-
-        auto fileIt = files.find(current_file);
-
-        if (fileIt == files.end()) {
-            cpersist_internal::ErrorManager::get().throwError("Current file is not loaded.");
-        }
-
-        const auto& fields = fileIt->second;
-
-        auto fieldIt = std::find_if(fields.begin(), fields.end(),
-                                    [&](const Field& field) { return field.name == fullname; });
-
-        if (fieldIt == fields.end()) {
-            if (defaultValue) {
-                return *defaultValue;
-            }
-
-            cpersist_internal::ErrorManager::get().throwError("Entry \"" + fullname +
-                                                              "\" not found.");
-        }
-
-        std::stringstream stream(std::string(reinterpret_cast<const char*>(fieldIt->value.data()),
-                                             fieldIt->value.size()),
-                                 std::ios::binary | std::ios::in);
-
-        T object;
-
-        cpersist::Serializer<T>::read(stream, object);
-
-        return object;
-    }
-
-    template <typename T>
-    void read_into(const std::string& name, T& result_into,
-                   std::optional<T> defaultValue = std::nullopt, const std::string& parent = "") {
-
-        result_into = read<T>(name, defaultValue, parent);
-    }
-
-    template <typename T, typename S>
-    void read_into_stream(const std::string& name, S& stream,
-                          std::optional<T> defaultValue = std::nullopt,
-                          const std::string& parent = "") {
-
-        stream << read<T>(name, defaultValue, parent);
-    }
 
     bool contains(const std::string& dataname, const bool loose = true);
 
@@ -329,6 +194,80 @@ public:
     void enable_autocommit_on_exit(const bool enable);
 };
 
+class File {
+public:
+    std::string filename;
+    std::vector<Field> fields;
+    File(const std::string& filename_, const std::vector<Field>& fields_ = std::vector<Field>{})
+        : filename(filename_), fields(fields_) {}
+
+    template <typename T>
+    void write(const std::string& fieldname, const T& fieldvalue, const std::string& parent = "") {
+        std::string fullname = parent.empty() ? fieldname : parent + "." + fieldname;
+        std::stringstream dataStream(std::ios::in | std::ios::out | std::ios::binary);
+
+        if constexpr (cpersist::hasArchive<T>) {
+            WriteArchive ar(fullname, *this);
+            const_cast<T&>(fieldvalue).archive(ar);
+            return;
+        } else {
+            cpersist::Serializer<T>::write(dataStream, fieldvalue);
+        }
+
+        dataStream.seekg(0, std::ios::end);
+        if (dataStream.tellg() == std::streampos(-1)) {
+            cpersist_internal::ErrorManager::get().throwError("Serialization failed.");
+        }
+        std::string dataString = dataStream.str();
+        std::vector<uint8_t> serialized(dataString.begin(), dataString.end());
+
+        for (auto& fd : fields) {
+            if (fd.name == fullname) {
+                fd.value = serialized;
+                return;
+            }
+        }
+
+        Field field(fullname, serialized);
+        fields.push_back(field);
+    }
+
+    template <typename T>
+    T read(const std::string& fieldname, std::optional<T> defaultValue = std::nullopt,
+           const std::string& parent = "") {
+
+        std::string fullname = parent.empty() ? fieldname : parent + "." + fieldname;
+
+        if constexpr (cpersist::hasArchive<T>) {
+            T object;
+
+            ReadArchive ar(fullname, *this);
+            object.archive(ar);
+            return object;
+        }
+
+        auto fieldIt = std::find_if(fields.begin(), fields.end(),
+                                    [&](const Field& field) { return field.name == fullname; });
+
+        if (fieldIt == fields.end()) {
+            if (defaultValue) {
+                return *defaultValue;
+            }
+
+            cpersist_internal::ErrorManager::get().throwError("Entry \"" + fullname +
+                                                              "\" not found.");
+        }
+
+        std::stringstream stream(std::string(reinterpret_cast<const char*>(fieldIt->value.data()),
+                                             fieldIt->value.size()),
+                                 std::ios::binary | std::ios::in);
+
+        T object;
+        cpersist::Serializer<T>::read(stream, object);
+        return object;
+    }
+};
+
 // Archive implementations.
 //
 // IMPORTANT:
@@ -336,9 +275,11 @@ public:
 // There is NO global saveMgr anymore.
 
 template <typename T> void WriteArchive::operator()(const std::string& key, T& value) {
-    manager.write(key, value, parent);
+    owner.write(key, value, parent);
 }
 
 template <typename T> void ReadArchive::operator()(const std::string& key, T& value) {
-    value = manager.read<T>(key, std::nullopt, parent);
+    value = owner.read<T>(key, std::nullopt, parent);
 }
+
+} // namespace cpersist
