@@ -240,7 +240,9 @@ public:
     // === OTHER ===
     void refresh();
     bool contains(const std::string& fieldnames, bool loose = true);
-    bool contains(const std::initializer_list<std::string>& fieldname, bool loose = true);
+    bool contains(const std::initializer_list<std::string>& fieldnames, bool loose = true);
+    void erase(const std::string& filedname);
+    void erase(const std::initializer_list<std::string>& fieldnames);
 
     // === TEMPLATES ===
     template <typename T>

@@ -529,5 +529,22 @@ bool File::contains(const std::initializer_list<std::string>& fieldnames, const 
 
     return true;
 }
+void File::erase(const std::string& fieldname) {
+    auto fieldIt = std::find_if(fields.begin(), fields.end(), [&](const Field& field) {
+        return (field.name == fieldname) || field.name.starts_with(fieldname + ".");
+    });
 
+    if (fieldIt == fields.end()) {
+        cpersist_internal::ErrorManager::get().throwError("Cannot delete field \"" + fieldname +
+                                                          "\" as it is nonexistent.");
+        return;
+    }
+
+    fields.erase(fieldIt);
+}
+void File::erase(const std::initializer_list<std::string>& fieldnames) {
+    for (auto& fieldname : fieldnames) {
+        erase(fieldname);
+    }
+}
 } // namespace cpersist

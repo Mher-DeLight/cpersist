@@ -91,3 +91,29 @@ TEST(Cpersist, AutocommitWorks) {
     }
     fs::remove("savedata/autocommit_works.bin");
 }
+
+TEST(Cpersist, EraseWorks) {
+    namespace fs = std::filesystem;
+    {
+        auto file = cpersist::File("erase_works");
+        EXPECT_ANY_THROW(file.erase("mynumber"));
+        EXPECT_FALSE(file.contains("mynumber"));
+        file.write("mynumber", 5);
+        EXPECT_TRUE(file.contains("mynumber"));
+        EXPECT_NO_THROW(file.erase("mynumber"));
+        EXPECT_FALSE(file.contains("mynumber"));
+    }
+    {
+        auto file = cpersist::File("erase_works");
+        EXPECT_ANY_THROW(file.erase({"num1", "num2"}));
+
+        EXPECT_FALSE(file.contains({"num1", "num2"}));
+
+        file.write("num1", 5);
+        file.write("num2", 3);
+
+        EXPECT_TRUE(file.contains({"num1", "num2"}));
+        EXPECT_NO_THROW(file.erase({"num1", "num2"}));
+        EXPECT_FALSE(file.contains({"num1", "num2"}));
+    }
+}
