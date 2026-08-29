@@ -145,7 +145,7 @@ public:
 
         dataStream.seekg(0, std::ios::end);
         if (dataStream.tellg() == std::streampos(-1)) {
-            cpersist_internal::ErrorManager::get().throwError("Serialization failed.");
+            cpersist::internal::ErrorManager::get().throwError("Serialization failed.");
         }
         std::string dataString = dataStream.str();
         std::vector<uint8_t> serialized(dataString.begin(), dataString.end());
@@ -186,8 +186,8 @@ public:
                 return *defaultValue;
             }
 
-            cpersist_internal::ErrorManager::get().throwError("Entry \"" + fullname +
-                                                              "\" not found.");
+            cpersist::internal::ErrorManager::get().throwError("Entry \"" + fullname +
+                                                               "\" not found.");
         }
 
         std::stringstream stream(std::string(reinterpret_cast<const char*>(fieldIt->value.data()),
@@ -200,6 +200,10 @@ public:
     }
 
     void commit();
+};
+template <typename T> class Stash {
+private:
+    T* object;
 };
 
 File CopyFile(File& file);

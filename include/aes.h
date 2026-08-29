@@ -13,7 +13,7 @@
 class AES_GCM_Manager {
 private:
     template <typename erType> void panic(const std::string& msg) {
-        cpersist_internal::ErrorManager::get().throwError(msg);
+        cpersist::internal::ErrorManager::get().throwError(msg);
     }
     AES_GCM_Manager() = default;
     ~AES_GCM_Manager() {

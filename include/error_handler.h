@@ -1,7 +1,8 @@
 #pragma once
 #include <string>
 
-namespace cpersist_internal {
+namespace cpersist {
+namespace internal {
 class ErrorManager {
 public:
     static ErrorManager& get() {
@@ -20,4 +21,5 @@ private:
     ErrorManager() {}
     ~ErrorManager() {}
 };
-} // namespace cpersist_internal
+} // namespace internal
+} // namespace cpersist

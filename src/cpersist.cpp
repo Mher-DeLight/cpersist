@@ -40,8 +40,8 @@ void File::commit() {
             std::ios::trunc); // write into <current_file>.<ext>, append if already exists
 
     if (!file) {
-        cpersist_internal::ErrorManager::get().throwError("Unable to commit to file \"" +
-                                                          fullFilePath.string() + ".\"");
+        cpersist::internal::ErrorManager::get().throwError("Unable to commit to file \"" +
+                                                           fullFilePath.string() + ".\"");
         return;
     }
     file.write(CPERSIST_MAGIC_HEADER, sizeof(CPERSIST_MAGIC_HEADER) - 1);
@@ -101,8 +101,8 @@ void File::erase(const std::string& fieldname) {
     });
 
     if (fieldIt == fields.end()) {
-        cpersist_internal::ErrorManager::get().throwError("Cannot delete field \"" + fieldname +
-                                                          "\" as it is nonexistent.");
+        cpersist::internal::ErrorManager::get().throwError("Cannot delete field \"" + fieldname +
+                                                           "\" as it is nonexistent.");
         return;
     }
 
@@ -150,8 +150,8 @@ std::vector<Field> File::parseFile() {
         // ===== NAME
         // check bounds
         if (position + sizeof(uint8_t) > data.size()) {
-            cpersist_internal::ErrorManager::get().throwError("file " + filename + extension +
-                                                              " is incorrectly formatted");
+            cpersist::internal::ErrorManager::get().throwError("file " + filename + extension +
+                                                               " is incorrectly formatted");
         }
 
         uint8_t nameSize;
@@ -161,8 +161,8 @@ std::vector<Field> File::parseFile() {
         // ===== NAME
         // check bounds
         if (position + nameSize > data.size()) {
-            cpersist_internal::ErrorManager::get().throwError("file " + filename + extension +
-                                                              " is incorrectly formatted");
+            cpersist::internal::ErrorManager::get().throwError("file " + filename + extension +
+                                                               " is incorrectly formatted");
         }
 
         std::string currentName(reinterpret_cast<const char*>(data.data() + position), nameSize);
@@ -170,8 +170,8 @@ std::vector<Field> File::parseFile() {
 
         // ===== DATASIZE
         if (position + sizeof(uint32_t) > data.size()) {
-            cpersist_internal::ErrorManager::get().throwError("file " + filename + extension +
-                                                              " is incorrectly formatted");
+            cpersist::internal::ErrorManager::get().throwError("file " + filename + extension +
+                                                               " is incorrectly formatted");
         }
 
         uint32_t dataSize;
@@ -180,8 +180,8 @@ std::vector<Field> File::parseFile() {
 
         // the position now points at the data itself
         if (position + dataSize > data.size()) {
-            cpersist_internal::ErrorManager::get().throwError("file " + filename + extension +
-                                                              " is incorrectly formatted");
+            cpersist::internal::ErrorManager::get().throwError("file " + filename + extension +
+                                                               " is incorrectly formatted");
         }
 
         // copy the data into a new vector
@@ -199,22 +199,22 @@ bool File::isDiskFileEncrypted() {
     fs::path curFp = (fs::path(folderName) / fs::path(filename + "." + extension));
     std::ifstream file(curFp, std::ios::binary);
     if (!file) {
-        cpersist_internal::ErrorManager::get().throwError("Failed to open file: " + filename);
+        cpersist::internal::ErrorManager::get().throwError("Failed to open file: " + filename);
     }
 
     std::string magicHeader(sizeof(CPERSIST_MAGIC_HEADER) - 1, '\0');
     if (!file.read(magicHeader.data(), magicHeader.size())) {
-        cpersist_internal::ErrorManager::get().throwError("Cannot read data file " + filename);
+        cpersist::internal::ErrorManager::get().throwError("Cannot read data file " + filename);
     }
 
     if (magicHeader != CPERSIST_MAGIC_HEADER) {
-        cpersist_internal::ErrorManager::get().throwError("Invalid magic header in data file " +
-                                                          filename);
+        cpersist::internal::ErrorManager::get().throwError("Invalid magic header in data file " +
+                                                           filename);
     }
 
     uint8_t encryptionMagicByte;
     if (!file.read(reinterpret_cast<char*>(&encryptionMagicByte), 1)) {
-        cpersist_internal::ErrorManager::get().throwError("Cannot read data file " + filename);
+        cpersist::internal::ErrorManager::get().throwError("Cannot read data file " + filename);
     }
 
     return encryptionMagicByte != 0x00;
@@ -227,8 +227,8 @@ std::vector<byte> File::readFileAsBinary() {
     std::ifstream file(customFilePath, std::ios::binary);
 
     if (!file) {
-        cpersist_internal::ErrorManager::get().throwError("Failed to open file: " + filename +
-                                                          extension);
+        cpersist::internal::ErrorManager::get().throwError("Failed to open file: " + filename +
+                                                           extension);
     }
 
     // Find the file's size
@@ -239,8 +239,8 @@ std::vector<byte> File::readFileAsBinary() {
     // then read it
     std::vector<uint8_t> bytes(size);
     if (!file.read(reinterpret_cast<char*>(bytes.data()), size)) {
-        cpersist_internal::ErrorManager::get().throwError("Cannot read data file " + filename +
-                                                          extension);
+        cpersist::internal::ErrorManager::get().throwError("Cannot read data file " + filename +
+                                                           extension);
     }
     bytes.erase(bytes.begin(), bytes.begin() + sizeof(CPERSIST_MAGIC_HEADER));
 
@@ -262,7 +262,7 @@ void File::write_bytes(const std::string& fieldname, const std::vector<byte>& fi
 
     dataStream.seekg(0, std::ios::end);
     if (dataStream.tellg() == std::streampos(-1)) {
-        cpersist_internal::ErrorManager::get().throwError("Serialization failed.");
+        cpersist::internal::ErrorManager::get().throwError("Serialization failed.");
     }
     std::string dataString = dataStream.str();
     std::vector<uint8_t> serialized(dataString.begin(), dataString.end());
