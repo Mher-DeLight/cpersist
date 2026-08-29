@@ -21,19 +21,15 @@ char getch() {
 }
 
 int main() {
-    SaveManager saveManager;
-
-    saveManager.enable_encryption(false);
-    saveManager.enable_autocommit_on_exit(true);
+    auto file = cpersist::File("player");
+    file.enable_autocommit_on_destroy(true);
 
     int x = 10;
     int y = 10;
     int speed = 1;
 
-    saveManager.open("saves");
-
-    saveManager.sync("x", x);
-    saveManager.sync("y", y);
+    file.sync("x", x);
+    file.sync("y", y);
 
     while (true) {
         system("clear");
@@ -70,6 +66,6 @@ int main() {
 
     system("clear");
 
-    saveManager.write("x", x);
-    saveManager.write("y", y);
+    file.write("x", x);
+    file.write("y", y);
 }
