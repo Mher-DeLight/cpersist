@@ -170,3 +170,15 @@ TEST(Cpersist, StashesWork) {
     EXPECT_EQ(bar->number, 3);
     bar->callDestruct = false;
 }
+TEST(Cpersist, SyncWorks) {
+    auto file = cpersist::File("sync_works");
+    int mynumber = 5;
+    file.sync("num", mynumber);
+    EXPECT_TRUE(file.contains("num"));
+    EXPECT_EQ(file.read<int>("num"), 5);
+
+    mynumber = 7;
+    file.sync("num", mynumber);
+    EXPECT_TRUE(file.contains("num"));
+    EXPECT_EQ(file.read<int>("num"), 5);
+}

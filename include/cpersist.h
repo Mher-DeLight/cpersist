@@ -211,6 +211,14 @@ public:
         return object;
     }
 
+    template <typename T>
+    void sync(const std::string& fieldname, T& fieldvalue, const std::string& parent = "") {
+        if (contains(fieldname)) {
+            fieldvalue = read<T>(fieldname);
+        } else {
+            write(fieldname, fieldvalue, parent);
+        }
+    }
     void commit();
 };
 template <typename T> class Stash {
