@@ -135,6 +135,7 @@ public:
 
     // === OTHER ===
     void refresh();
+    void discard();
     bool contains(const std::string& fieldnames, bool loose = true);
     bool contains(const std::initializer_list<std::string>& fieldnames, bool loose = true);
     bool erase(const std::string& filedname);

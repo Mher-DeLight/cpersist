@@ -119,6 +119,9 @@ void File::merge(File& other) {
         write_bytes(field.name, field.value);
     }
 }
+void File::discard() {
+    init();
+}
 
 // == PRIVATE ==
 void File::init() {

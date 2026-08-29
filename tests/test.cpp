@@ -215,3 +215,17 @@ TEST(Cpersist, ArchivesWork) {
     EXPECT_EQ(file.read<mystruct>("obj").number, 3);
     fs::remove("savedata/archives_work.bin");
 }
+TEST(Cpersist, DiscardWorks) {
+    namespace fs = std::filesystem;
+    auto file = cpersist::File("discard_works");
+    file.write("a", 5);
+    file.commit();
+
+    file.write("a", 3);
+    file.write("b", 2);
+    file.discard();
+
+    EXPECT_EQ(file.read<int>("a"), 5);
+    EXPECT_FALSE(file.contains("b"));
+    fs::remove("savedata/discard_works.bin");
+}
