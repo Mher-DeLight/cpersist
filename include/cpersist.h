@@ -1,9 +1,7 @@
 #pragma once
-
 #include "aes.h"
 #include "error_handler.h"
 #include "serializer.h"
-
 #include <algorithm>
 #include <cstdint>
 #include <cstring>
@@ -22,11 +20,12 @@
 #include <vector>
 
 namespace cpersist {
-std::vector<uint8_t> generateKeyFromString(const std::string& s);
-
+using byte = uint8_t;
 namespace fs = std::filesystem;
+
 constexpr char CPERSIST_MAGIC_HEADER[] = "CPERSIST_MAGIC_HEADER";
 constexpr std::string folderName = "savedata";
+std::vector<uint8_t> generateKeyFromString(const std::string& s);
 
 // ARCHIVES
 
@@ -54,6 +53,7 @@ public:
     template <typename T> void operator()(const std::string& key, T& value);
 };
 
+#pragma region concepts
 template <typename T>
 concept hasWrite = requires(T& t, const std::string& parent) { t.write(parent); };
 
@@ -63,6 +63,7 @@ concept hasRead = requires(T& t, const std::string& parent) { t.read(parent); };
 template <typename T>
 concept hasArchive = requires(T& t, WriteArchive& war) { t.archive(war); } &&
                      requires(T& t, ReadArchive& rar) { t.archive(rar); };
+#pragma endregion
 
 class Field {
 public:
@@ -72,125 +73,6 @@ public:
     std::string name;
     std::vector<uint8_t> value;
 };
-
-class SaveManager {
-private:
-    std::string current_file;
-    std::unordered_map<std::string, std::vector<Field>> files;
-
-    void debugLog(const std::string& message) {
-        if (!debugMode) {
-            return;
-        }
-
-        std::cout << "[CPERSIST LOG] " << message << std::endl;
-    }
-
-    std::string fileExtension = ".bin";
-    std::string folderName = "savedata";
-    std::filesystem::path fullFilePath;
-
-    std::vector<Field> readFile(const std::string& filename);
-
-    std::vector<uint8_t> toBytes(uint64_t value) {
-        return {static_cast<uint8_t>(value >> 56), static_cast<uint8_t>(value >> 48),
-                static_cast<uint8_t>(value >> 40), static_cast<uint8_t>(value >> 32),
-                static_cast<uint8_t>(value >> 24), static_cast<uint8_t>(value >> 16),
-                static_cast<uint8_t>(value >> 8),  static_cast<uint8_t>(value)};
-    }
-
-    bool debugMode = true;
-    bool encryption_enabled = true;
-    bool commitOnDestroy = false;
-
-public:
-    // Normal object construction/destruction.
-    SaveManager() {
-        init();
-    }
-
-    ~SaveManager() {
-        if (commitOnDestroy) {
-            try {
-                commit();
-            } catch (...) {
-            }
-        }
-    }
-
-    // Prevent accidental copying of manager state.
-    SaveManager(const SaveManager&) = delete;
-    SaveManager& operator=(const SaveManager&) = delete;
-
-    void init();
-
-    void reinit();
-
-    void loadExistingFiles();
-
-    bool filename_fits_standards(const std::string& filename);
-
-    void make_filename_safe(std::string& filename);
-
-    bool change_file(const std::string& new_file);
-
-    void change_file_safe(const std::string& new_file);
-
-    bool create_new_file(const std::string& new_file);
-
-    bool file_exists(const std::string& filename);
-
-    bool file_exists_on_disk(const std::string& filename);
-
-    bool open(const std::string& filename);
-
-    void ensure_exists(std::initializer_list<std::string> filenames);
-
-    void ensure_exists(std::vector<std::string> filenames);
-
-    // WRITING
-    uint64_t getDataPosition(const std::string& name, const bool loose = false);
-
-    std::vector<uint8_t> readFileAsBinary(const std::string& filename);
-
-    bool isFileEncrypted(const std::string& filename = "");
-
-    void erase(const std::string& fieldname);
-
-    // READING
-
-    bool contains(const std::string& dataname, const bool loose = true);
-
-    bool contains(const std::initializer_list<std::string>& datanames, const bool loose = true);
-
-    // COMMIT
-
-    void commit();
-
-    // LOGGERS
-
-    void log_filenames();
-
-    void log_current_filename();
-
-    // GETTERS
-
-    const std::string& get_current_file();
-
-    const std::string& get_file_extension();
-
-    // SETTERS
-
-    void set_file_extension(const std::string& new_extension);
-
-    void set_encryption_key(const std::string& key);
-
-    void enable_encryption(const bool enable);
-
-    void enable_autocommit_on_exit(const bool enable);
-};
-
-using byte = uint8_t;
 class File {
 private:
     bool encryptionEnabled = false;
@@ -314,16 +196,9 @@ public:
     void commit();
 };
 
-// Archive implementations.
-//
-// IMPORTANT:
-// These now use the SaveManager instance that owns the Archive.
-// There is NO global saveMgr anymore.
-
 template <typename T> void WriteArchive::operator()(const std::string& key, T& value) {
     owner.write(key, value, parent);
 }
-
 template <typename T> void ReadArchive::operator()(const std::string& key, T& value) {
     value = owner.read<T>(key, std::nullopt, parent);
 }
