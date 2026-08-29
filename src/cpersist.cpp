@@ -296,7 +296,7 @@ void SaveManager::set_file_extension(const std::string& new_extension) {
     init();
 }
 void SaveManager::set_encryption_key(const std::string& key) {
-    encrMgr.setEncryptionKey(cpersist_internal::hashString(key));
+    encrMgr.setEncryptionKey(generateKeyFromString(key));
     init(); // reinit to parse existing files into the buffer
 }
 void SaveManager::enable_encryption(const bool enable) {
@@ -305,10 +305,9 @@ void SaveManager::enable_encryption(const bool enable) {
 void SaveManager::enable_autocommit_on_exit(const bool enable) {
     commitOnDestroy = enable;
 }
-} // namespace cpersist
 
-namespace cpersist_internal {
-std::vector<uint8_t> hashString(const std::string& str) {
+std::vector<uint8_t> generateKeyFromString(const std::string& str) {
+
     constexpr uint64_t seeds[4] = {0x243F6A8885A308D3ULL, 0x13198A2E03707344ULL,
                                    0xA4093822299F31D0ULL, 0x082EFA98EC4E6C89ULL};
 
@@ -331,7 +330,7 @@ std::vector<uint8_t> hashString(const std::string& str) {
 
     return key;
 }
-} // namespace cpersist_internal
+} // namespace cpersist
 
 // == NEW API ==
 namespace cpersist {
@@ -374,6 +373,7 @@ void File::commit() {
     }
 
     if (encryptionEnabled) {
+        encrMgr.setEncryptionKey(encryptionKey);
         bytes = encrMgr.encrypt(bytes);
     }
 
@@ -383,6 +383,7 @@ void File::commit() {
 void File::init() {
     std::filesystem::create_directory(folderName); // creates the folder if it doesn't exist
 
+    fields.clear();
     loadFile();
 }
 void File::refresh() {
@@ -400,7 +401,7 @@ void File::loadFile() {
     }
 }
 std::vector<Field> File::parseFile() {
-    if (isDiskFileEncrypted() && encrMgr.encryKeyEmpty()) {
+    if (isDiskFileEncrypted() && encryptionKey.empty()) {
         return std::vector<Field>();
     }
 
@@ -483,6 +484,7 @@ bool File::isDiskFileEncrypted() {
 }
 std::vector<byte> File::readFileAsBinary() {
     bool fileEncr = isDiskFileEncrypted();
+
     std::filesystem::path customFilePath =
         std::filesystem::path(folderName) / (filename + "." + extension);
     std::ifstream file(customFilePath, std::ios::binary);
@@ -506,6 +508,7 @@ std::vector<byte> File::readFileAsBinary() {
     bytes.erase(bytes.begin(), bytes.begin() + sizeof(CPERSIST_MAGIC_HEADER));
 
     if (fileEncr) {
+        encrMgr.setEncryptionKey(encryptionKey);
         bytes = encrMgr.decrypt(bytes);
     }
 

@@ -21,11 +21,8 @@
 #include <utility>
 #include <vector>
 
-namespace cpersist_internal {
-std::vector<uint8_t> hashString(const std::string& s);
-} // namespace cpersist_internal
-
 namespace cpersist {
+std::vector<uint8_t> generateKeyFromString(const std::string& s);
 
 namespace fs = std::filesystem;
 constexpr char CPERSIST_MAGIC_HEADER[] = "CPERSIST_MAGIC_HEADER";
@@ -197,6 +194,7 @@ using byte = uint8_t;
 class File {
 private:
     bool encryptionEnabled = false;
+    std::vector<byte> encryptionKey = std::vector<byte>{};
     std::vector<Field> fields;
 
     void init();
@@ -209,17 +207,27 @@ public:
     const std::string filename;
     const std::string extension = "bin";
 
-    File(const std::string& filename_, bool encryptionEnabled_ = false,
-         const std::string& extension_ = "bin",
+    File(const std::string& filename_, const std::string& extension_ = "bin",
+         const std::string& encryptionKey_ = "",
          const std::vector<Field>& fields_ = std::vector<Field>{})
-        : filename(filename_), encryptionEnabled(encryptionEnabled_), extension(extension_),
-          fields(fields_) {
+        : filename(filename_), extension(extension_),
+          encryptionKey(generateKeyFromString(encryptionKey_)), fields(fields_) {
+        if (encryptionKey_.empty())
+            encryptionEnabled = false;
         init();
     }
 
-    void enable_encryption(bool enable) {
-        encryptionEnabled = enable;
+    void enable_encryption(const std::string& key = "") {
+        encryptionEnabled = true;
+        encryptionKey = generateKeyFromString(key);
+        init();
     }
+    void disable_encryption() {
+        encryptionEnabled = false;
+        encryptionKey = std::vector<byte>();
+        init();
+    }
+
     void refresh();
 
     template <typename T>
