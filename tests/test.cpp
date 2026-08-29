@@ -90,7 +90,7 @@ TEST(Cpersist, EraseWorks) {
     namespace fs = std::filesystem;
     {
         auto file = cpersist::File("erase_works");
-        EXPECT_ANY_THROW(file.erase("mynumber"));
+        EXPECT_FALSE(file.erase("mynumber"));
         EXPECT_FALSE(file.contains("mynumber"));
         file.write("mynumber", 5);
         EXPECT_TRUE(file.contains("mynumber"));
@@ -99,7 +99,7 @@ TEST(Cpersist, EraseWorks) {
     }
     {
         auto file = cpersist::File("erase_works");
-        EXPECT_ANY_THROW(file.erase({"num1", "num2"}));
+        EXPECT_FALSE(file.erase({"num1", "num2"}));
 
         EXPECT_FALSE(file.contains({"num1", "num2"}));
 

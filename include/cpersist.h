@@ -137,8 +137,8 @@ public:
     void refresh();
     bool contains(const std::string& fieldnames, bool loose = true);
     bool contains(const std::initializer_list<std::string>& fieldnames, bool loose = true);
-    void erase(const std::string& filedname);
-    void erase(const std::initializer_list<std::string>& fieldnames);
+    bool erase(const std::string& filedname);
+    bool erase(const std::initializer_list<std::string>& fieldnames);
     void merge(File& other);
 
     // === TEMPLATES ===
