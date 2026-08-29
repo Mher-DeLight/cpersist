@@ -13,14 +13,13 @@
 
 > [!WARNING]
 > cpersist is still in the Alpha pre-release. Although the project is usable, backward compatibility is still not in mind.
-
 **cpersist** is a lightweight C++ library for saving and loading data between runs of your program. Instead of writing file handling code every time you need persistent storage, cpersist provides a simple interface for storing values under labels and retrieving them later.
 
 The library is designed with simplicity in mind. Whether you're making a small game, a command-line utility, or a personal project, cpersist aims to make persistence easy without requiring knowledge of serialization formats or complex file I/O.
 
 ## Features
 
-cpersist is currently in a very early stage, meaning features are minimal. Current features include:
+cpersist is currently in an early stage, meaning features are minimal. Current features include:
 
 * Save data under a string label.
 * Load data using its label.
@@ -34,23 +33,21 @@ cpersist is currently in a very early stage, meaning features are minimal. Curre
 ## Example
 
 ```cpp
-SaveManager saveMgr;
-saveMgr.open("playerdata");
+auto file = cpersist::File("playerdata");
 int high_score = 10;
-if (!saveMgr.contains("highscore")) {
-    saveMgr.write("highscore", high_score); // save if not saved already
-    saveMgr.commit();
+if (!file.contains("highscore")) {
+    file.write("highscore", high_score); // save if not saved already
+    file.commit();
 } else {
-    high_score = saveMgr.read<int>("highscore");
+    high_score = file.read<int>("highscore");
 }
 ```
 Or, its equivalent:
 ```cpp
-SaveManager saveMgr;
-saveMgr.open("playerdata");
+auto file = cpersist::File("playerdata");
 int high_score = 10;
-saveMgr.sync("highscore", highscore);
-saveMgr.commit();
+file.sync("highscore", highscore);
+file.commit();
 ```
 
 ## Installation
@@ -98,5 +95,7 @@ Then in your C++ file, you can do:
 ```
 Then you can use cpersist.
 
-## Wiki
-We have a Work-in-Progress Wiki! Check it out [here](https://github.com/Mher-DeLight/cpersist/wiki).
+## Documentation
+We have a small [quickstart documentation file](DOCUMENTATION.md). For more complicated queries, please check out our [wiki](https://github.com/Mher-DeLight/cpersist/wiki).
+> [!NOTE]
+> The wiki is currently very early Work-in-Progress. Right now, it's probably better if you just refer to the normal [documentation file.](DOCUMENTATION.md)

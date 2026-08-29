@@ -6,7 +6,7 @@ TEST(Cpersist, FileBufferWorks) {
     auto file = cpersist::File("myfile");
     file.write("mynumber", 3);
 
-    EXPECT_EQ(file.read<int>("mynumber", 3), 3);
+    EXPECT_EQ(file.read<int>("mynumber"), 3);
 }
 TEST(Cpersist, CommitWorks) {
     namespace fs = std::filesystem;
