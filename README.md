@@ -69,7 +69,7 @@ target_include_directories(your_cmake_target PRIVATE ${CMAKE_SOURCE_DIR}/include
 Note that this method is currently only supported for x86-64 Linux.
 ### Latest Release
 Download the `.tar.gz` that was attached to the release. In your CMake directory, make sure you have a folder called `include/`. Inside that folder, create another folder called `cpersist/` and export the `.tar.gz` there. Then, add the following in your CMakeLists.txt:
-```
+```cmake
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -87,7 +87,7 @@ git clone https://www.github.com/Mher-DeLight/cpersist
 Then go to your project's CMakeLists.txt, which is on the same level as the top-level `include/` and add:
 ```cmake
 add_subdirectory(include/cpersist)
-target_link_libraries(your_cmake_target PRIVATE cpersist
+target_link_libraries(your_cmake_target PRIVATE cpersist)
 ```
 Then in your C++ file, you can do:
 ```cpp
