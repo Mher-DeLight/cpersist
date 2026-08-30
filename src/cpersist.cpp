@@ -325,7 +325,9 @@ File CopyFile(File& file, const std::string& newname, const std::string& newexte
         return cpy;
     }
 
-    return File(newname, newextension, newencrpytionkey, file.fields);
+    auto cpy = File(newname, newextension, newencrpytionkey);
+    cpy.fields = file.fields;
+    return cpy;
 }
 
 #pragma endregion
