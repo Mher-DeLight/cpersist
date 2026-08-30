@@ -77,6 +77,7 @@ void File::commit() {
 
     file.write(reinterpret_cast<const char*>(bytes.data()),
                static_cast<std::streamsize>(bytes.size()));
+    read_version = write_version;
 }
 void File::refresh() {
     init();

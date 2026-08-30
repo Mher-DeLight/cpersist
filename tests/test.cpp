@@ -281,5 +281,13 @@ TEST(Cpersist, SchemaVersionsWork) {
         auto file = cpersist::File("schemaversion_works");
         EXPECT_EQ(file.get_schema_file_version(), 5);
     }
+    {
+        auto file = cpersist::File("schemaversion_works");
+        file.set_schema_version(6);
+        EXPECT_EQ(file.get_schema_buffer_version(), 6);
+        EXPECT_EQ(file.get_schema_file_version(), 5);
+        file.commit();
+        EXPECT_EQ(file.get_schema_file_version(), 6);
+    }
     fs::remove("savedata/schemaversion_works.bin");
 }
