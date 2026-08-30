@@ -245,3 +245,23 @@ TEST(Cpersist, WriteStashWorks) {
 
     cpersist::FreeStash<templatestruct>("writestash");
 }
+TEST(Cpersist, DebateWriteWorks) {
+    auto file = cpersist::File("debatewrite_works");
+    int number = 5;
+
+    // accept test
+    {
+        file.debateWrite("foo", number);
+        EXPECT_FALSE(file.contains("foo"));
+        file.acceptWrite();
+        EXPECT_TRUE(file.contains("foo"));
+        EXPECT_EQ(file.read<int>("foo"), 5);
+    }
+    // reject test
+    {
+        file.debateWrite("bar", number);
+        EXPECT_FALSE(file.contains("bar"));
+        file.rejectWrite();
+        EXPECT_FALSE(file.contains("bar"));
+    }
+}

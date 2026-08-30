@@ -7,6 +7,7 @@
 #include <cstring>
 #include <filesystem>
 #include <fstream>
+#include <functional>
 #include <initializer_list>
 #include <iostream>
 #include <optional>
@@ -65,7 +66,7 @@ public:
     template <typename T> void operator()(const std::string& key, T& value);
 };
 
-// CONCEPTS, FIELDS, FILES, AND IMPLEMENTATIONS & OTHERS
+// CONCEPTS, FIELDS, FILES, AND IMPLEMENTATIONS & OTHERS744
 template <typename T> T* LoadStash(const std::string& name);
 
 #pragma region concepts
@@ -95,6 +96,8 @@ private:
     std::vector<byte> encryptionKey = std::vector<byte>{};
     std::vector<Field> fields;
 
+    std::function<void()> debatedWrite;
+
     void init();
     void loadFile();
     std::vector<Field> parseFile();
@@ -115,6 +118,9 @@ public:
         init();
     }
     ~File() {
+        if (debatedWrite)
+            internal::ErrorManager::get().throwError("cannot destroy file \"" + filename +
+                                                     "\" while a write is still being debated");
         if (autocommit_on_destroy)
             commit();
     }
@@ -194,6 +200,34 @@ public:
 
     void write_bytes(const std::string& fieldname, const std::vector<byte>& fieldvalue,
                      const std::string& parent = "");
+
+    template <typename T>
+    void debateWrite(const std::string& fieldname, const T& fieldvalue,
+                     const std::string& parent = "") {
+        if (debatedWrite) {
+            internal::ErrorManager::get().throwError("a write is already being debated");
+        }
+
+        std::string fullname = parent.empty() ? fieldname : parent + "." + fieldname;
+        debatedWrite = [this, fullname, fieldvalue]() { write(fullname, fieldvalue); };
+    }
+    void acceptWrite() {
+        if (!debatedWrite) {
+            internal::ErrorManager::get().throwError("no write is currently being debated");
+        }
+
+        auto pendingWrite = std::move(debatedWrite);
+        debatedWrite = nullptr;
+
+        pendingWrite();
+    }
+    void rejectWrite() {
+        if (!debatedWrite) {
+            internal::ErrorManager::get().throwError("no write is currently being debated");
+        }
+
+        debatedWrite = nullptr;
+    }
 
     // READING
     template <typename T>
