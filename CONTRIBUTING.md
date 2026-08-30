@@ -20,7 +20,7 @@ This will download the code into your device. Then run:
 git remote add upstream https://github.com/Mher-DeLight/cpersist
 git switch -c thing-youre-adding
 ```
-This will create a new branch. You should name the branch based on the feature you're adding such that it is easy to tell what it's supposed to do. Making a new branch will make it that your changes don't directly affect the main branch if you mess something up. Make sure that, at the time you're committing, CPERSIST_BUILD_TESTS in CMakeLists.txt is set to OFF. You can set it by passing -DBUILD_TESTS=ON to the compilation command, but please do not modify it from the CMakeLists.txt directly.
+This will create a new branch. You should name the branch based on the feature you're adding such that it is easy to tell what it's supposed to do. Making a new branch will make it that your changes don't directly affect the main branch if you mess something up. Make sure that, at the time you're committing, `BUILD_TESTS` in CMakeLists.txt is set to `OFF`. You can set it by passing `-DBUILD_TESTS=ON` to the compilation command, but please do not modify it from the CMakeLists.txt directly.
 
 After that, you should make your changes. During those changes, you should periodically commit your changes via:
 ```bash
