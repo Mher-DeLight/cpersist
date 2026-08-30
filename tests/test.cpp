@@ -164,11 +164,15 @@ TEST(Cpersist, StashesWork) {
     EXPECT_EQ(foo->number, 7);
     foo->callDestruct = false;
 
-    { cpersist::Stash<mystruct*> bar("bar", new mystruct(3)); }
-    mystruct* bar = *cpersist::LoadStash<mystruct*>("bar");
-    EXPECT_NE(bar, nullptr);
-    EXPECT_EQ(bar->number, 3);
-    bar->callDestruct = false;
+    cpersist::FreeStash<mystruct>("foo");
+
+    { cpersist::Stash<mystruct*> foo("foo", new mystruct(3)); }
+    foo = *cpersist::LoadStash<mystruct*>("foo");
+    EXPECT_NE(foo, nullptr);
+    EXPECT_EQ(foo->number, 3);
+    foo->callDestruct = false;
+
+    cpersist::FreeStash<mystruct*>("foo");
 }
 TEST(Cpersist, SyncWorks) {
     auto file = cpersist::File("sync_works");
@@ -238,4 +242,6 @@ TEST(Cpersist, WriteStashWorks) {
     file.writeStash<templatestruct>("writestash");
     EXPECT_TRUE(file.contains("writestash"));
     EXPECT_EQ(file.read<templatestruct>("writestash").number, 7);
+
+    cpersist::FreeStash<templatestruct>("writestash");
 }

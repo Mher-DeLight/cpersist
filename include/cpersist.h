@@ -275,6 +275,23 @@ template <typename T> T* LoadStash(const std::string& name) {
 
     return static_cast<T*>(it->second.object);
 }
+template <typename T> bool FreeStash(const std::string& name) {
+    auto it = internal::stashMap.find(name);
+
+    if (it == internal::stashMap.end()) {
+        return false;
+    }
+
+    auto ti = std::type_index(typeid(T));
+    if (it->second.type != ti) {
+        throw std::runtime_error("Stash \"" + name + "\" has the wrong type");
+    }
+
+    T* castedObject = static_cast<T*>(it->second.object);
+    castedObject->~T();
+    internal::stashMap.erase(it);
+    return true;
+}
 
 File CopyFile(File& file);
 
