@@ -316,8 +316,16 @@ void File::write_bytes(const std::string& fieldname, const std::vector<byte>& fi
 }
 #pragma endregion
 #pragma region global_functions
-File CopyFile(File& file) {
-    return file; // automatically copies. thanks, c++.
+File CopyFile(File& file, const std::string& newname, const std::string& newextension,
+              const std::string& newencrpytionkey) {
+    if (newencrpytionkey.empty()) {
+        auto cpy = File(newname, newextension, "");
+        cpy.fields = file.fields;
+        cpy.encryptionKey = file.encryptionKey;
+        return cpy;
+    }
+
+    return File(newname, newextension, newencrpytionkey, file.fields);
 }
 
 #pragma endregion

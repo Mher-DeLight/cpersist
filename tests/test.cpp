@@ -116,7 +116,7 @@ TEST(Cpersist, CopyingWorks) {
     auto file1 = cpersist::File("copying1");
     file1.write("mynumber", 3);
 
-    auto file2 = cpersist::CopyFile(file1);
+    auto file2 = cpersist::CopyFile(file1, "copying2");
     EXPECT_TRUE(file2.contains("mynumber"));
 
     file2.write("foo", 5);
@@ -126,6 +126,19 @@ TEST(Cpersist, CopyingWorks) {
 
     EXPECT_TRUE(file1.contains("mynumber"));
     EXPECT_FALSE(file1.contains("foo"));
+
+    {
+        auto file3 = cpersist::CopyFile(file1, "copying3", "bin", "someencryptionkey");
+        file3.write("d", 6);
+        file3.commit();
+    }
+    auto file3 = cpersist::File("copying3", "bin", "someencryptionkey");
+    EXPECT_TRUE(file3.contains("mynumber"));
+    EXPECT_TRUE(file3.contains("d"));
+
+    EXPECT_EQ(file3.read<int>("mynumber"), 3);
+    EXPECT_EQ(file3.read<int>("d"), 6);
+    fs::remove("savedata/copying3.bin");
 }
 TEST(Cpersist, MergeWorks) {
     namespace fs = std::filesystem;

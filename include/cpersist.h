@@ -306,6 +306,9 @@ public:
                    std::optional<T> defaultValue = std::nullopt, const std::string& parent = "") {
         result = read<T>(fieldname);
     }
+
+    friend File CopyFile(File& file, const std::string& newname, const std::string& newextension,
+                         const std::string& newencrpytionkey);
 };
 template <typename T> class Stash {
 public:
@@ -353,7 +356,8 @@ template <typename T> bool FreeStash(const std::string& name) {
     return true;
 }
 
-File CopyFile(File& file);
+File CopyFile(File& file, const std::string& newname, const std::string& newextension = "bin",
+              const std::string& newencrpytionkey = "");
 
 template <typename T> void WriteArchive::operator()(const std::string& key, T& value) {
     owner.write(key, value, parent);
