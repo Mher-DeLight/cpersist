@@ -194,10 +194,10 @@ TEST(Cpersist, ReadIntoWorks) {
     EXPECT_TRUE(file.contains("num"));
     EXPECT_EQ(mynumber, 5);
 }
-struct mystruct {
+struct templatestruct {
     int number = 0;
-    mystruct(int number_) : number(number_) {}
-    mystruct() = default;
+    templatestruct(int number_) : number(number_) {}
+    templatestruct() = default;
 
     template <typename Archive> void archive(Archive& ar) {
         ar("number", number);
@@ -206,13 +206,13 @@ struct mystruct {
 TEST(Cpersist, ArchivesWork) {
     namespace fs = std::filesystem;
     auto file = cpersist::File("archives_work");
-    mystruct obj(3);
+    templatestruct obj(3);
     file.write("obj", obj);
     file.commit();
 
     file.refresh();
 
-    EXPECT_EQ(file.read<mystruct>("obj").number, 3);
+    EXPECT_EQ(file.read<templatestruct>("obj").number, 3);
     fs::remove("savedata/archives_work.bin");
 }
 TEST(Cpersist, DiscardWorks) {
@@ -228,4 +228,14 @@ TEST(Cpersist, DiscardWorks) {
     EXPECT_EQ(file.read<int>("a"), 5);
     EXPECT_FALSE(file.contains("b"));
     fs::remove("savedata/discard_works.bin");
+}
+TEST(Cpersist, WriteStashWorks) {
+    {
+        // make the stash here
+        cpersist::Stash<templatestruct> foo("writestash", 7);
+    }
+    auto file = cpersist::File("writestash_works");
+    file.writeStash<templatestruct>("writestash");
+    EXPECT_TRUE(file.contains("writestash"));
+    EXPECT_EQ(file.read<templatestruct>("writestash").number, 7);
 }

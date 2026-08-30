@@ -66,6 +66,7 @@ public:
 };
 
 // CONCEPTS, FIELDS, FILES, AND IMPLEMENTATIONS & OTHERS
+template <typename T> T* LoadStash(const std::string& name);
 
 #pragma region concepts
 template <typename T>
@@ -142,7 +143,7 @@ public:
     bool erase(const std::initializer_list<std::string>& fieldnames);
     void merge(File& other);
 
-    // === TEMPLATES ===
+    // === WRITING ===
     template <typename T>
     void write(const std::string& fieldname, const T& fieldvalue, const std::string& parent = "") {
         std::string fullname = parent.empty() ? fieldname : parent + "." + fieldname;
@@ -153,7 +154,9 @@ public:
             const_cast<T&>(fieldvalue).archive(ar);
             return;
         } else {
-            cpersist::Serializer<T>::write(dataStream, fieldvalue);
+            cpersist::Serializer<T>::write(
+                dataStream,
+                fieldvalue); // TODO: why does templatestruct in writestash take this route :(
         }
 
         dataStream.seekg(0, std::ios::end);
@@ -174,9 +177,25 @@ public:
         fields.push_back(field);
     }
 
+    template <typename T>
+    void writeStash(const std::string& stashname, const std::string& fieldname = "") {
+        std::string appliedfieldname = fieldname;
+        if (fieldname.empty()) {
+            if (contains(stashname)) {
+                internal::ErrorManager::get().throwError(
+                    "Implicit stash name cannot overwrite existing Fieldname in writeStash()");
+            }
+            appliedfieldname = stashname;
+        }
+
+        auto data = *LoadStash<T>(stashname);
+        write(appliedfieldname, data);
+    }
+
     void write_bytes(const std::string& fieldname, const std::vector<byte>& fieldvalue,
                      const std::string& parent = "");
 
+    // READING
     template <typename T>
     T read(const std::string& fieldname, std::optional<T> defaultValue = std::nullopt,
            const std::string& parent = "") {
