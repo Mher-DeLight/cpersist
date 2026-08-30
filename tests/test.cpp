@@ -265,3 +265,21 @@ TEST(Cpersist, DebateWriteWorks) {
         EXPECT_FALSE(file.contains("bar"));
     }
 }
+TEST(Cpersist, SchemaVersionsWork) {
+    namespace fs = std::filesystem;
+    {
+        auto file = cpersist::File("schemaversion_works");
+        file.set_schema_version(5);
+        EXPECT_EQ(file.get_schema_buffer_version(), 5);
+        file.commit();
+    }
+    {
+        auto file = cpersist::File("schemaversion_works");
+        EXPECT_ANY_THROW(file.schema_standard(10));
+    }
+    {
+        auto file = cpersist::File("schemaversion_works");
+        EXPECT_EQ(file.get_schema_file_version(), 5);
+    }
+    fs::remove("savedata/schemaversion_works.bin");
+}

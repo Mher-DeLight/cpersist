@@ -46,6 +46,7 @@ void File::commit() {
     }
     file.write(CPERSIST_MAGIC_HEADER, sizeof(CPERSIST_MAGIC_HEADER) - 1);
     file.write(reinterpret_cast<const char*>(&encryptionEnabled), sizeof(encryptionEnabled));
+    file.write(reinterpret_cast<const char*>(&write_version), sizeof(write_version));
 
     std::vector<uint8_t> bytes;
     for (auto& field : fields) {
@@ -223,8 +224,38 @@ bool File::isDiskFileEncrypted() {
 
     return encryptionMagicByte != 0x00;
 }
+int File::getDiskFileVersion() {
+    fs::path curFp = (fs::path(folderName) / fs::path(filename + "." + extension));
+    std::ifstream file(curFp, std::ios::binary);
+    if (!file) {
+        cpersist::internal::ErrorManager::get().throwError("Failed to open file: " + filename);
+    }
+
+    std::string magicHeader(sizeof(CPERSIST_MAGIC_HEADER) - 1, '\0');
+    if (!file.read(magicHeader.data(), magicHeader.size())) {
+        cpersist::internal::ErrorManager::get().throwError("Cannot read data file " + filename);
+    }
+
+    if (magicHeader != CPERSIST_MAGIC_HEADER) {
+        cpersist::internal::ErrorManager::get().throwError("Invalid magic header in data file " +
+                                                           filename);
+    }
+
+    uint8_t encryptionMagicByte;
+    if (!file.read(reinterpret_cast<char*>(&encryptionMagicByte), 1)) {
+        cpersist::internal::ErrorManager::get().throwError("Cannot read data file " + filename);
+    }
+
+    int version;
+    if (!file.read(reinterpret_cast<char*>(&version), sizeof(write_version))) {
+        cpersist::internal::ErrorManager::get().throwError("Cannot read data file " + filename);
+    }
+
+    return version;
+}
 std::vector<byte> File::readFileAsBinary() {
     bool fileEncr = isDiskFileEncrypted();
+    read_version = getDiskFileVersion();
 
     std::filesystem::path customFilePath =
         std::filesystem::path(folderName) / (filename + "." + extension);
@@ -246,7 +277,8 @@ std::vector<byte> File::readFileAsBinary() {
         cpersist::internal::ErrorManager::get().throwError("Cannot read data file " + filename +
                                                            extension);
     }
-    bytes.erase(bytes.begin(), bytes.begin() + sizeof(CPERSIST_MAGIC_HEADER));
+    bytes.erase(bytes.begin(),
+                bytes.begin() + sizeof(CPERSIST_MAGIC_HEADER) + sizeof(write_version));
 
     if (fileEncr) {
         encrMgr.setEncryptionKey(encryptionKey);

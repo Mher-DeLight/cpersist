@@ -91,6 +91,9 @@ public:
 };
 class File {
 private:
+    int write_version = 0;
+    int read_version = 0;
+
     bool encryptionEnabled = false;
     bool autocommit_on_destroy = false;
     std::vector<byte> encryptionKey = std::vector<byte>{};
@@ -102,6 +105,7 @@ private:
     void loadFile();
     std::vector<Field> parseFile();
     bool isDiskFileEncrypted();
+    int getDiskFileVersion();
     std::vector<byte> readFileAsBinary();
 
 public:
@@ -138,6 +142,28 @@ public:
     }
     void enable_autocommit_on_destroy(bool enable) {
         autocommit_on_destroy = enable;
+    }
+
+    void set_schema_version(int version) {
+        write_version = version;
+    }
+    int get_schema_file_version() {
+        return read_version;
+    }
+    int get_schema_buffer_version() {
+        return write_version;
+    }
+    void schema_standard(int standard) {
+        if (read_version < standard) {
+            internal::ErrorManager::get().throwError(
+                "file with schema standard " + std::to_string(standard) +
+                " cannot read file with verison " + std::to_string(read_version));
+        }
+        if (write_version < standard) {
+            internal::ErrorManager::get().throwError(
+                "file with schema standard " + std::to_string(standard) +
+                " cannot write file with verison " + std::to_string(read_version));
+        }
     }
 
     // === OTHER ===
