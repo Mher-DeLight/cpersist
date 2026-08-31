@@ -119,6 +119,8 @@ public:
           encryptionKey(generateKeyFromString(encryptionKey_)), fields(fields_) {
         if (encryptionKey_.empty())
             encryptionEnabled = false;
+        else
+            encryptionEnabled = true;
         init();
     }
     ~File() {

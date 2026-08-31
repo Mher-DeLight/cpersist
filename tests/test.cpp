@@ -33,14 +33,24 @@ TEST(Cpersist, InitWorks) {
 TEST(Cpersist, EncryptionWorks) {
     namespace fs = std::filesystem;
     {
-        auto file = cpersist::File("encr_works", "bin", "myencryptionkey");
-        file.enable_encryption("myencryptionkey");
+        auto file = cpersist::File("encr_works", "bin");
+        file.enable_encryption("myencryptionkey"); // only works if the there is NO file on the disk
+        // otherwise the constructor will throw because the OpenSSL authentication failed
         file.write("mynumber", 5);
         file.commit();
     }
     {
         auto file = cpersist::File("encr_works", "bin", "myencryptionkey");
+        EXPECT_TRUE(file.contains("mynumber"));
         EXPECT_EQ(file.read<int>("mynumber"), 5);
+        file.write("a", 3);
+        file.commit();
+    }
+    {
+        auto file = cpersist::File("encr_works", "bin", "myencryptionkey");
+        EXPECT_EQ(file.read<int>("mynumber"), 5);
+        EXPECT_TRUE(file.contains("a"));
+        EXPECT_EQ(file.read<int>("a"), 3);
     }
     {
         EXPECT_ANY_THROW(auto file =
