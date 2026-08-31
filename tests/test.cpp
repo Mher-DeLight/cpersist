@@ -85,6 +85,9 @@ TEST(Cpersist, ContainsWorks) {
     fs::remove("savedata/contains_works.bin");
 }
 TEST(Cpersist, AutocommitWorks) {
+    // not very reliable, since commits may fail, and C++ doesn't usually let destructors throw just
+    // like that
+    // we do have atomic writing now, but stil not very safe.
     namespace fs = std::filesystem;
     {
         auto file = cpersist::File("autocommit_works");
@@ -107,7 +110,7 @@ TEST(Cpersist, EraseWorks) {
         EXPECT_FALSE(file.contains("mynumber"));
         file.write("mynumber", 5);
         EXPECT_TRUE(file.contains("mynumber"));
-        EXPECT_NO_THROW(file.erase("mynumber"));
+        EXPECT_TRUE(file.erase("mynumber"));
         EXPECT_FALSE(file.contains("mynumber"));
     }
     {
@@ -120,7 +123,7 @@ TEST(Cpersist, EraseWorks) {
         file.write("num2", 3);
 
         EXPECT_TRUE(file.contains({"num1", "num2"}));
-        EXPECT_NO_THROW(file.erase({"num1", "num2"}));
+        EXPECT_TRUE(file.erase({"num1", "num2"}));
         EXPECT_FALSE(file.contains({"num1", "num2"}));
     }
 }
@@ -201,6 +204,8 @@ TEST(Cpersist, StashesWork) {
     cpersist::FreeStash<mystruct*>("foo");
 }
 TEST(Cpersist, SyncWorks) {
+    // write if not present in the file
+    // otherwise read
     auto file = cpersist::File("sync_works");
     int mynumber = 5;
     file.sync("num", mynumber);
