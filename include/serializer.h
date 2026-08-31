@@ -7,6 +7,7 @@
 #include <ostream>
 #include <string>
 #include <type_traits>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -55,6 +56,36 @@ struct Serializer<std::map<Key, Value, Compare, Allocator>> {
     }
 
     static void read(std::istream& is, std::map<Key, Value, Compare, Allocator>& value) {
+        uint32_t size;
+        Serializer<uint32_t>::read(is, size);
+
+        value.clear();
+        for (uint32_t i = 0; i < size; ++i) {
+            Key key;
+            Value mappedValue;
+            Serializer<Key>::read(is, key);
+            Serializer<Value>::read(is, mappedValue);
+            value.emplace(std::move(key), std::move(mappedValue));
+        }
+    }
+};
+
+// ===== STD::UNORDERED_MAP =====
+template <typename Key, typename Value, typename Hash, typename KeyEqual, typename Allocator>
+struct Serializer<std::unordered_map<Key, Value, Hash, KeyEqual, Allocator>> {
+    static void write(std::ostream& os,
+                      const std::unordered_map<Key, Value, Hash, KeyEqual, Allocator>& value) {
+        uint32_t size = static_cast<uint32_t>(value.size());
+        Serializer<uint32_t>::write(os, size);
+
+        for (const auto& [key, mappedValue] : value) {
+            Serializer<Key>::write(os, key);
+            Serializer<Value>::write(os, mappedValue);
+        }
+    }
+
+    static void read(std::istream& is,
+                     std::unordered_map<Key, Value, Hash, KeyEqual, Allocator>& value) {
         uint32_t size;
         Serializer<uint32_t>::read(is, size);
 

@@ -197,7 +197,9 @@ TEST(Cpersist, StashesWork) {
         }
     };
 
-    { cpersist::Stash<mystruct> foo("foo", 7); }
+    {
+        cpersist::Stash<mystruct> foo("foo", 7);
+    }
     mystruct* foo = cpersist::LoadStash<mystruct>("foo");
     EXPECT_NE(foo, nullptr);
     EXPECT_EQ(foo->number, 7);
@@ -205,7 +207,9 @@ TEST(Cpersist, StashesWork) {
 
     cpersist::FreeStash<mystruct>("foo");
 
-    { cpersist::Stash<mystruct*> foo("foo", new mystruct(3)); }
+    {
+        cpersist::Stash<mystruct*> foo("foo", new mystruct(3));
+    }
     foo = *cpersist::LoadStash<mystruct*>("foo");
     EXPECT_NE(foo, nullptr);
     EXPECT_EQ(foo->number, 3);
