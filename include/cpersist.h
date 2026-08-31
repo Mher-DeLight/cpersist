@@ -176,6 +176,7 @@ public:
     bool erase(const std::string& filedname);
     bool erase(const std::initializer_list<std::string>& fieldnames);
     void merge(File& other);
+    void clear();
 
     // === WRITING ===
     template <typename T>

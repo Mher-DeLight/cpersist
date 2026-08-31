@@ -314,3 +314,24 @@ TEST(Cpersist, SchemaVersionsWork) {
     }
     fs::remove("savedata/schemaversion_works.bin");
 }
+TEST(Cpersist, ClearWorks) {
+    auto file = cpersist::File("clear_works");
+    file.write("a", 5);
+    EXPECT_TRUE(file.contains("a"));
+    file.clear();
+    EXPECT_FALSE(file.contains("a"));
+
+    file.write("a", 5);
+    file.commit();
+    EXPECT_TRUE(file.contains("a"));
+
+    file.clear();
+    file.refresh();
+    EXPECT_TRUE(file.contains("a"));
+
+    file.write("a", 5);
+    file.commit();
+    file.clear();
+    file.refresh();
+    EXPECT_TRUE(file.contains("a"));
+}

@@ -124,6 +124,9 @@ void File::merge(File& other) {
 void File::discard() {
     init();
 }
+void File::clear() {
+    fields.clear();
+}
 
 // == PRIVATE ==
 void File::init() {
@@ -314,6 +317,7 @@ void File::write_bytes(const std::string& fieldname, const std::vector<byte>& fi
     Field field(fullname, serialized);
     fields.push_back(field);
 }
+
 #pragma endregion
 #pragma region global_functions
 File CopyFile(File& file, const std::string& newname, const std::string& newextension,
