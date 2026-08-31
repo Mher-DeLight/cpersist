@@ -4,9 +4,12 @@
 
 TEST(Cpersist, FileBufferWorks) {
     auto file = cpersist::File("myfile");
-    file.write("mynumber", 3);
+    file.write("foo", 3);
 
-    EXPECT_EQ(file.read<int>("mynumber"), 3);
+    EXPECT_TRUE(file.contains("foo"));
+    EXPECT_EQ(file.read<int>("foo"), 3);
+    EXPECT_ANY_THROW(file.read<int>("bar"));
+    EXPECT_EQ(file.read<int>("bar", 6), 6);
 }
 TEST(Cpersist, CommitWorks) {
     namespace fs = std::filesystem;
@@ -220,6 +223,10 @@ TEST(Cpersist, ReadIntoWorks) {
     file.read_into("num", mynumber);
     EXPECT_TRUE(file.contains("num"));
     EXPECT_EQ(mynumber, 5);
+
+    EXPECT_ANY_THROW(file.read_into("bar", mynumber));
+    file.read_into("bar", mynumber, std::optional<int>{7});
+    EXPECT_EQ(mynumber, 7);
 }
 struct templatestruct {
     int number = 0;

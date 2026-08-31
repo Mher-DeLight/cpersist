@@ -307,7 +307,7 @@ public:
     template <typename T>
     void read_into(const std::string& fieldname, T& result,
                    std::optional<T> defaultValue = std::nullopt, const std::string& parent = "") {
-        result = read<T>(fieldname);
+        result = read<T>(fieldname, defaultValue, parent);
     }
 
     friend File CopyFile(File& file, const std::string& newname, const std::string& newextension,
