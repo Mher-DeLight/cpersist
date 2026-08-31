@@ -8,9 +8,6 @@
     
 </div>
 
-> [!CAUTION]
-> The project is currently undergroing major API changes. The documentation is currently not accurate.
-
 > [!WARNING]
 > cpersist is still in the Alpha pre-release. Although the project is usable, backward compatibility is still not in mind.
 
