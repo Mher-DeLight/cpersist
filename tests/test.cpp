@@ -2,6 +2,16 @@
 #include <gtest/gtest.h>
 #include <iostream>
 
+struct templatestruct {
+    int number = 0;
+    templatestruct(int number_) : number(number_) {}
+    templatestruct() = default;
+
+    template <typename Archive> void archive(Archive& ar) {
+        ar("number", number);
+    }
+};
+
 TEST(Cpersist, FileBufferWorks) {
     auto file = cpersist::File("myfile");
     file.write("foo", 3);
@@ -233,15 +243,6 @@ TEST(Cpersist, ReadIntoWorks) {
     file.read_into("bar", mynumber, std::optional<int>{7});
     EXPECT_EQ(mynumber, 7);
 }
-struct templatestruct {
-    int number = 0;
-    templatestruct(int number_) : number(number_) {}
-    templatestruct() = default;
-
-    template <typename Archive> void archive(Archive& ar) {
-        ar("number", number);
-    }
-};
 TEST(Cpersist, ArchivesWork) {
     namespace fs = std::filesystem;
     auto file = cpersist::File("archives_work");
