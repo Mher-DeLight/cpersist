@@ -30,6 +30,8 @@ constexpr char CPERSIST_MAGIC_HEADER[] = "CPERSIST_MAGIC_HEADER";
 constexpr std::string folderName = "savedata";
 std::vector<uint8_t> generateKeyFromString(const std::string& s);
 
+class File;
+
 namespace internal {
 
 struct StashedObject {
@@ -37,13 +39,20 @@ struct StashedObject {
     std::type_index type;
 };
 inline std::map<std::string, StashedObject> stashMap;
+class WriteProxy {
+private:
+    File& file;
+    std::string key;
+
+public:
+    WriteProxy(File& file, std::string key) : file(file), key(std::move(key)) {}
+
+    template <typename T> WriteProxy& operator=(const T& value);
+};
 
 } // namespace internal
 
 // ARCHIVES
-
-class SaveManager;
-class File;
 
 class Archive {
 protected:
@@ -259,6 +268,10 @@ public:
         debatedWrite = nullptr;
     }
 
+    internal::WriteProxy operator[](const std::string& key) {
+        return internal::WriteProxy(*this, key);
+    }
+
     // READING
     template <typename T>
     T read(const std::string& fieldname, std::optional<T> defaultValue = std::nullopt,
@@ -368,6 +381,11 @@ template <typename T> void WriteArchive::operator()(const std::string& key, T& v
 }
 template <typename T> void ReadArchive::operator()(const std::string& key, T& value) {
     value = owner.read<T>(key, std::nullopt, parent);
+}
+
+template <typename T> internal::WriteProxy& internal::WriteProxy::operator=(const T& value) {
+    file.write(key, value);
+    return *this;
 }
 
 } // namespace cpersist

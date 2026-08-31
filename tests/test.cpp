@@ -344,3 +344,16 @@ TEST(Cpersist, ClearWorks) {
     EXPECT_TRUE(file.contains("a"));
     fs::remove("savedata/clear_works.bin");
 }
+TEST(Cpersist, OperatorBracketWorks) {
+    auto file = cpersist::File("myfile");
+    file["a"] = 5;
+    EXPECT_TRUE(file.contains("a"));
+    EXPECT_EQ(file.read<int>("a"), 5);
+    file.commit();
+    file.refresh();
+    EXPECT_TRUE(file.contains("a"));
+    EXPECT_EQ(file.read<int>("a"), 5);
+    file["a"] = 3;
+    EXPECT_TRUE(file.contains("a"));
+    EXPECT_EQ(file.read<int>("a"), 3);
+}
