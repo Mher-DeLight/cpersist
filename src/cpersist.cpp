@@ -32,52 +32,11 @@ std::vector<uint8_t> generateKeyFromString(const std::string& str) {
 #pragma region file
 // == PUBLIC ==
 void File::commit() {
-    fs::path fullFilePath = (fs::path(folderName) / fs::path(filename + "." + extension));
-
-    std::ofstream file(
-        fullFilePath,
-        std::ios::binary |
-            std::ios::trunc); // write into <current_file>.<ext>, append if already exists
-
-    if (!file) {
-        cpersist::internal::ErrorManager::get().throwError("Unable to commit to file \"" +
-                                                           fullFilePath.string() + ".\"");
-        return;
+    if (!atomicReplace()) {
+        cpersist::internal::ErrorManager::get().throwError(
+            "Unable to atomically commit file: " +
+            (fs::path(folderName) / (filename + "." + extension)).string());
     }
-    file.write(CPERSIST_MAGIC_HEADER, sizeof(CPERSIST_MAGIC_HEADER) - 1);
-    file.write(reinterpret_cast<const char*>(&encryptionEnabled), sizeof(encryptionEnabled));
-    file.write(reinterpret_cast<const char*>(&write_version), sizeof(write_version));
-
-    std::vector<uint8_t> bytes;
-    for (auto& field : fields) {
-        bytes.push_back(field.name.size());
-        for (auto& c : field.name) {
-            bytes.push_back(c);
-        }
-
-        uint32_t valueSize = static_cast<uint32_t>(field.value.size());
-        std::vector<std::uint8_t> valueSizeVector = {
-            static_cast<std::uint8_t>((valueSize) & 0xFF),
-            static_cast<std::uint8_t>((valueSize >> 8) & 0xFF),
-            static_cast<std::uint8_t>((valueSize >> 16) & 0xFF),
-            static_cast<std::uint8_t>((valueSize >> 24) & 0xFF)};
-        for (auto byt : valueSizeVector) {
-            bytes.push_back(byt);
-        }
-
-        for (auto& vl : field.value) {
-            bytes.push_back(vl);
-        }
-    }
-
-    if (encryptionEnabled) {
-        encrMgr.setEncryptionKey(encryptionKey);
-        bytes = encrMgr.encrypt(bytes);
-    }
-
-    file.write(reinterpret_cast<const char*>(bytes.data()),
-               static_cast<std::streamsize>(bytes.size()));
-    read_version = write_version;
 }
 void File::refresh() {
     init();

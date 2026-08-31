@@ -103,6 +103,7 @@ private:
 
     void init();
     void loadFile();
+    bool atomicReplace();
     std::vector<Field> parseFile();
     bool isDiskFileEncrypted();
     int getDiskFileVersion();

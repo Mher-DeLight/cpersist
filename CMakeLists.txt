@@ -5,7 +5,7 @@ option(BUILD_TESTS "Build CPersist tests" OFF)
 set(CMAKE_CXX_STANDARD 20)
 
 
-add_library(cpersist STATIC src/cpersist.cpp src/error_handler.cpp src/aes.cpp)
+add_library(cpersist STATIC src/cpersist.cpp src/error_handler.cpp src/aes.cpp src/atomic.cpp)
 
 target_compile_features(cpersist PUBLIC cxx_std_20)
 

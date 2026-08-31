@@ -322,6 +322,7 @@ TEST(Cpersist, SchemaVersionsWork) {
     fs::remove("savedata/schemaversion_works.bin");
 }
 TEST(Cpersist, ClearWorks) {
+    namespace fs = std::filesystem;
     auto file = cpersist::File("clear_works");
     file.write("a", 5);
     EXPECT_TRUE(file.contains("a"));
@@ -341,4 +342,5 @@ TEST(Cpersist, ClearWorks) {
     file.clear();
     file.refresh();
     EXPECT_TRUE(file.contains("a"));
+    fs::remove("savedata/clear_works.bin");
 }
