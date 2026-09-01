@@ -197,9 +197,7 @@ TEST(Cpersist, StashesWork) {
         }
     };
 
-    {
-        cpersist::Stash<mystruct> foo("foo", 7);
-    }
+    { cpersist::Stash<mystruct> foo("foo", 7); }
     mystruct* foo = cpersist::LoadStash<mystruct>("foo");
     EXPECT_NE(foo, nullptr);
     EXPECT_EQ(foo->number, 7);
@@ -207,9 +205,7 @@ TEST(Cpersist, StashesWork) {
 
     cpersist::FreeStash<mystruct>("foo");
 
-    {
-        cpersist::Stash<mystruct*> foo("foo", new mystruct(3));
-    }
+    { cpersist::Stash<mystruct*> foo("foo", new mystruct(3)); }
     foo = *cpersist::LoadStash<mystruct*>("foo");
     EXPECT_NE(foo, nullptr);
     EXPECT_EQ(foo->number, 3);
@@ -366,4 +362,27 @@ TEST(Cpersist, OperatorBracketWorks) {
     file["a"] = 3;
     EXPECT_TRUE(file.contains("a"));
     EXPECT_EQ(file.read<int>("a"), 3);
+}
+TEST(Cpersist, UnorderedMapWorks) {
+    auto file = cpersist::File("umap_works");
+    std::unordered_map<std::string, int> map = {
+        {"key1", 3}, {"key2", 5}, {"key3", 14}, {"key4", 12}};
+    file.write("umap", map);
+    EXPECT_TRUE(file.contains("umap"));
+
+    auto result = file.read<std::unordered_map<std::string, int>>("umap");
+    EXPECT_EQ(result["key1"], map["key1"]);
+    EXPECT_EQ(result["key2"], map["key2"]);
+    EXPECT_EQ(result["key3"], map["key3"]);
+    EXPECT_EQ(result["key4"], map["key4"]);
+    file.commit();
+    file.refresh();
+
+    EXPECT_TRUE(file.contains("umap"));
+
+    auto newresult = file.read<std::unordered_map<std::string, int>>("umap");
+    EXPECT_EQ(newresult["key1"], map["key1"]);
+    EXPECT_EQ(newresult["key2"], map["key2"]);
+    EXPECT_EQ(newresult["key3"], map["key3"]);
+    EXPECT_EQ(newresult["key4"], map["key4"]);
 }
