@@ -47,6 +47,16 @@ int high_score = 10;
 file.sync("highscore", highscore);
 file.commit();
 ```
+## Serialization
+The library currently supports the serialization of:
+- Trivially serializable types (e.g. `int`, `float`, `bool`, `char`)
+- Custom classes (via Archives)
+- `std::string`
+- `std::vector`
+- `std::map`
+- `std::unordered_map`
+- `std::array`
+- Hopefully more to come
 
 ## Installation
 ### Quick Installation
