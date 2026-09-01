@@ -48,6 +48,7 @@ public:
     WriteProxy(File& file, std::string key) : file(file), key(std::move(key)) {}
 
     template <typename T> WriteProxy& operator=(const T& value);
+    template <typename T> T get();
 };
 
 } // namespace internal
@@ -396,6 +397,9 @@ template <typename T> void ReadArchive::operator()(const std::string& key, T& va
 template <typename T> internal::WriteProxy& internal::WriteProxy::operator=(const T& value) {
     file.write(key, value);
     return *this;
+}
+template <typename T> T internal::WriteProxy::get() {
+    return file.read<T>(key);
 }
 
 } // namespace cpersist

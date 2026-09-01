@@ -368,13 +368,29 @@ TEST(Cpersist, OperatorBracketWorks) {
     file["a"] = 5;
     EXPECT_TRUE(file.contains("a"));
     EXPECT_EQ(file.read<int>("a"), 5);
+
+    EXPECT_NO_THROW(file["a"]);
+    EXPECT_EQ(file["a"].get<int>(), 5);
+
     file.commit();
+
+    EXPECT_NO_THROW(file["a"]);
+    EXPECT_EQ(file["a"].get<int>(), 5);
+
     file.refresh();
     EXPECT_TRUE(file.contains("a"));
     EXPECT_EQ(file.read<int>("a"), 5);
+
+    EXPECT_NO_THROW(file["a"]);
+    EXPECT_EQ(file["a"].get<int>(), 5);
+
     file["a"] = 3;
     EXPECT_TRUE(file.contains("a"));
     EXPECT_EQ(file.read<int>("a"), 3);
+
+    EXPECT_NO_THROW(file["a"]);
+    EXPECT_EQ(file["a"].get<int>(), 3);
+
     fs::remove("savedata/myfile.bin");
 }
 TEST(Cpersist, UnorderedMapWorks) {
