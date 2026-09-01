@@ -351,6 +351,7 @@ TEST(Cpersist, ClearWorks) {
     fs::remove("savedata/clear_works.bin");
 }
 TEST(Cpersist, OperatorBracketWorks) {
+    namespace fs = std::filesystem;
     auto file = cpersist::File("myfile");
     file["a"] = 5;
     EXPECT_TRUE(file.contains("a"));
@@ -362,8 +363,10 @@ TEST(Cpersist, OperatorBracketWorks) {
     file["a"] = 3;
     EXPECT_TRUE(file.contains("a"));
     EXPECT_EQ(file.read<int>("a"), 3);
+    fs::remove("savedata/myfile.bin");
 }
 TEST(Cpersist, UnorderedMapWorks) {
+    namespace fs = std::filesystem;
     auto file = cpersist::File("umap_works");
     std::unordered_map<std::string, int> map = {
         {"key1", 3}, {"key2", 5}, {"key3", 14}, {"key4", 12}};
@@ -385,4 +388,5 @@ TEST(Cpersist, UnorderedMapWorks) {
     EXPECT_EQ(newresult["key2"], map["key2"]);
     EXPECT_EQ(newresult["key3"], map["key3"]);
     EXPECT_EQ(newresult["key4"], map["key4"]);
+    fs::remove("savedata/umap_works.bin");
 }
