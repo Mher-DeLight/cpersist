@@ -76,6 +76,11 @@ public:
 
     WriteProposal(std::function<void()> proposedWrite_)
         : proposedWrite(std::move(proposedWrite_)) {}
+    ~WriteProposal() {
+        // should work as long as reject() doesn't reference File
+        if (proposedWrite)
+            reject();
+    }
 };
 
 // ARCHIVES
