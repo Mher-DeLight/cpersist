@@ -33,11 +33,21 @@ git push origin thing-youre-adding
 ```
 After that, go to GitHub again and open your fork's page. You will see a button labeled "Compare & pull request". Press it. Then describe what you changed, and if you fixed an issue, give the issue ID. Then I will personally review your pull request. I might ask for some changes, you should hopefully follow. Then you should push again and the PR will automatically update. Then eventually I will accept your PR and merge it into the repository.
 
-## If you're using VSCode CMake Tools Extension
+### If you're using VSCode CMake Tools Extension
 To configure the CPERSIST_BUILD_TESTS from the menu button, press Ctrl+, and type "cmake.options.advanced" into the search bar. Select the blue hyperlink that says "Edit settings.json" which will open a file. Append the following before the "cmake.options.advanced" field:
 ```json
 "cmake.configureSettings": {
-    "CPERSIST_BUILD_TESTS": true
+    "BUILD_TESTS": true
 },
 ```
 Save and exit the file. Then press Ctrl+Shift+P and type "CMake: Delete Cache and Reconfigure" and press enter. Now when you press the build button at the bottom, CPERSIST_BUILD_TEST will be set to ON.
+
+## Project Structure
+- `src/aes.cpp` - Handles AES-256 encryption with the `encrMgr` object.
+- `src/atomic.cpp` - Handles atomic file replacement. Has its own file because it requires platform-dependent information, which we don't like to include with the main project body.
+- `src/cpersist.cpp` - Main implementations of Files, Stashes, Proxies, etc.
+- `src/error_handler.cpp` - Handles errors. Minimal for now.
+- `tests/game.cpp` - A simple CLI movement game to test persistence. Not included in any build option. Basically an artifact.
+- `tests/test.cpp` - Unit tests handle via Google Test.
+- `.clang-format` - clang-format configuration file.
+- `CMakeLists.txt` - CMake configuration file.
