@@ -281,24 +281,36 @@ TEST(Cpersist, WriteStashWorks) {
 
     cpersist::FreeStash<templatestruct>("writestash");
 }
-TEST(Cpersist, DebateWriteWorks) {
+TEST(Cpersist, WriteProposalsWork) {
     auto file = cpersist::File("debatewrite_works");
     int number = 5;
 
     // accept test
     {
-        file.debateWrite("foo", number);
+        auto proposal = file.proposeWrite("foo", number);
         EXPECT_FALSE(file.contains("foo"));
-        file.acceptWrite();
+        proposal.accept();
         EXPECT_TRUE(file.contains("foo"));
         EXPECT_EQ(file.read<int>("foo"), 5);
     }
     // reject test
     {
-        file.debateWrite("bar", number);
+        auto proposal = file.proposeWrite("bar", number);
         EXPECT_FALSE(file.contains("bar"));
-        file.rejectWrite();
+        proposal.reject();
         EXPECT_FALSE(file.contains("bar"));
+    }
+    // multiple proposals
+    {
+        auto proposal1 = file.proposeWrite("a", 5);
+        auto proposal2 = file.proposeWrite("b", 3);
+        EXPECT_FALSE(file.contains("a"));
+        EXPECT_FALSE(file.contains("b"));
+        proposal1.accept();
+        proposal2.reject();
+        EXPECT_TRUE(file.contains("a"));
+        EXPECT_EQ(file.read<int>("a"), 5);
+        EXPECT_FALSE(file.contains("b"));
     }
 }
 TEST(Cpersist, SchemaVersionsWork) {

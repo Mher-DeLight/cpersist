@@ -51,6 +51,31 @@ public:
 };
 
 } // namespace internal
+class WriteProposal {
+public:
+    std::function<void()> proposedWrite;
+
+    void accept() {
+        if (!proposedWrite) {
+            internal::ErrorManager::get().throwError("no write is currently being debated");
+        }
+
+        auto pendingWrite = std::move(proposedWrite);
+        proposedWrite = nullptr;
+
+        pendingWrite();
+    }
+    void reject() {
+        if (!proposedWrite) {
+            internal::ErrorManager::get().throwError("no write is currently being debated");
+        }
+
+        proposedWrite = nullptr;
+    }
+
+    WriteProposal(std::function<void()> proposedWrite_)
+        : proposedWrite(std::move(proposedWrite_)) {}
+};
 
 // ARCHIVES
 
@@ -108,8 +133,6 @@ private:
     std::vector<byte> encryptionKey = std::vector<byte>{};
     std::vector<Field> fields;
 
-    std::function<void()> debatedWrite;
-
     void init();
     void loadFile();
     bool atomicReplace();
@@ -134,9 +157,6 @@ public:
         init();
     }
     ~File() {
-        if (debatedWrite)
-            internal::ErrorManager::get().throwError("cannot destroy file \"" + filename +
-                                                     "\" while a write is still being debated");
         if (autocommit_on_destroy)
             commit();
     }
@@ -241,31 +261,11 @@ public:
                      const std::string& parent = "");
 
     template <typename T>
-    void debateWrite(const std::string& fieldname, const T& fieldvalue,
-                     const std::string& parent = "") {
-        if (debatedWrite) {
-            internal::ErrorManager::get().throwError("a write is already being debated");
-        }
-
+    WriteProposal proposeWrite(const std::string& fieldname, const T& fieldvalue,
+                               const std::string& parent = "") {
         std::string fullname = parent.empty() ? fieldname : parent + "." + fieldname;
-        debatedWrite = [this, fullname, fieldvalue]() { write(fullname, fieldvalue); };
-    }
-    void acceptWrite() {
-        if (!debatedWrite) {
-            internal::ErrorManager::get().throwError("no write is currently being debated");
-        }
-
-        auto pendingWrite = std::move(debatedWrite);
-        debatedWrite = nullptr;
-
-        pendingWrite();
-    }
-    void rejectWrite() {
-        if (!debatedWrite) {
-            internal::ErrorManager::get().throwError("no write is currently being debated");
-        }
-
-        debatedWrite = nullptr;
+        auto debatedWrite = [this, fullname, fieldvalue]() { write(fullname, fieldvalue); };
+        return WriteProposal(debatedWrite);
     }
 
     internal::WriteProxy operator[](const std::string& key) {
