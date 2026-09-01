@@ -76,7 +76,7 @@ public:
 };
 
 // CONCEPTS, FIELDS, FILES, AND IMPLEMENTATIONS & OTHERS744
-template <typename T> T* LoadStash(const std::string& name);
+template <typename T> T& LoadStash(const std::string& name);
 
 #pragma region concepts
 template <typename T>
@@ -233,7 +233,7 @@ public:
             appliedfieldname = stashname;
         }
 
-        auto data = *LoadStash<T>(stashname);
+        auto data = LoadStash<T>(stashname);
         write(appliedfieldname, data);
     }
 
@@ -328,6 +328,9 @@ public:
                          const std::string& newencrpytionkey);
 };
 template <typename T> class Stash {
+private:
+    T* data;
+
 public:
     template <typename... Args> explicit Stash(const std::string& name, Args&&... args) {
         if (internal::stashMap.contains(name)) {
@@ -335,14 +338,21 @@ public:
         }
 
         T* object = new T(std::forward<Args>(args)...);
+        data = object;
 
         internal::stashMap.emplace(
             name, internal::StashedObject{static_cast<void*>(object), std::type_index(typeid(T))});
     }
+    T& getData() const {
+        return *data;
+    }
+    operator T&() const {
+        return *data;
+    }
 
     ~Stash() = default;
 };
-template <typename T> T* LoadStash(const std::string& name) {
+template <typename T> T& LoadStash(const std::string& name) {
     auto it = internal::stashMap.find(name);
 
     if (it == internal::stashMap.end()) {
@@ -353,7 +363,7 @@ template <typename T> T* LoadStash(const std::string& name) {
         throw std::runtime_error("Stash \"" + name + "\" has the wrong type");
     }
 
-    return static_cast<T*>(it->second.object);
+    return *static_cast<T*>(it->second.object);
 }
 template <typename T> bool FreeStash(const std::string& name) {
     auto it = internal::stashMap.find(name);

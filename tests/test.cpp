@@ -198,7 +198,7 @@ TEST(Cpersist, StashesWork) {
     };
 
     { cpersist::Stash<mystruct> foo("foo", 7); }
-    mystruct* foo = cpersist::LoadStash<mystruct>("foo");
+    mystruct* foo = &cpersist::LoadStash<mystruct>("foo");
     EXPECT_NE(foo, nullptr);
     EXPECT_EQ(foo->number, 7);
     foo->callDestruct = false;
@@ -206,7 +206,7 @@ TEST(Cpersist, StashesWork) {
     cpersist::FreeStash<mystruct>("foo");
 
     { cpersist::Stash<mystruct*> foo("foo", new mystruct(3)); }
-    foo = *cpersist::LoadStash<mystruct*>("foo");
+    foo = cpersist::LoadStash<mystruct*>("foo");
     EXPECT_NE(foo, nullptr);
     EXPECT_EQ(foo->number, 3);
     foo->callDestruct = false;
@@ -389,4 +389,16 @@ TEST(Cpersist, UnorderedMapWorks) {
     EXPECT_EQ(newresult["key3"], map["key3"]);
     EXPECT_EQ(newresult["key4"], map["key4"]);
     fs::remove("savedata/umap_works.bin");
+}
+TEST(Cpersist, StashConversionWorks) {
+    std::string& mystring = cpersist::Stash<std::string>("stashconv_stash", "foo");
+    mystring = "bar";
+    EXPECT_EQ(cpersist::LoadStash<std::string>("stashconv_stash"), "bar");
+
+    std::string myotherstring = cpersist::Stash<std::string>("stashconv2_stash", "foo");
+    myotherstring = "bar";
+    EXPECT_EQ(cpersist::LoadStash<std::string>("stashconv2_stash"), "foo");
+
+    cpersist::FreeStash<std::string>("stashconv_stash");
+    cpersist::FreeStash<std::string>("stashconv2_stash");
 }
