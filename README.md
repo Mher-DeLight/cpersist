@@ -56,6 +56,7 @@ The library currently supports the serialization of:
 - `std::map`
 - `std::unordered_map`
 - `std::array`
+- `std::pair`
 - Hopefully more to come
 
 ## Installation
