@@ -25,6 +25,19 @@ template <typename T> struct Serializer<T, std::enable_if_t<std::is_trivially_co
     }
 };
 
+// ===== STD::PAIR =====
+template <typename First, typename Second> struct Serializer<std::pair<First, Second>> {
+    static void write(std::ostream& os, const std::pair<First, Second>& value) {
+        Serializer<First>::write(os, value.first);
+        Serializer<Second>::write(os, value.second);
+    }
+
+    static void read(std::istream& is, std::pair<First, Second>& value) {
+        Serializer<First>::read(is, value.first);
+        Serializer<Second>::read(is, value.second);
+    }
+};
+
 // ===== STD::ARRAY =====
 // Non-trivial T only
 // Trivially-copyable arrays use the generic memcpy specialization

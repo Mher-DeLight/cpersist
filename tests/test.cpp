@@ -418,6 +418,22 @@ TEST(Cpersist, UnorderedMapWorks) {
     EXPECT_EQ(newresult["key4"], map["key4"]);
     fs::remove("savedata/umap_works.bin");
 }
+TEST(Cpersist, PairWorks) {
+    auto file = cpersist::File("pair_works");
+    const std::pair<int, std::string> pair = {42, "cpersist"};
+    file.write("pair", pair);
+
+    auto result = file.read<std::pair<int, std::string>>("pair");
+    EXPECT_EQ(result, pair);
+}
+TEST(Cpersist, NestedPairWorks) {
+    auto file = cpersist::File("nested_pair_works");
+    const std::pair<std::string, std::vector<int>> pair = {"values", {1, 2, 3}};
+    file.write("pair", pair);
+
+    auto result = file.read<std::pair<std::string, std::vector<int>>>("pair");
+    EXPECT_EQ(result, pair);
+}
 TEST(Cpersist, StashConversionWorks) {
     std::string& mystring = cpersist::Stash<std::string>("stashconv_stash", "foo");
     mystring = "bar";
