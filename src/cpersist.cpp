@@ -115,6 +115,15 @@ std::vector<Field> File::parseFile() {
     std::vector<Field> fields;
     uint64_t position = 0;
     while (position < data.size()) {
+        // ===== FIELD VERSION
+        if (position + sizeof(int) > data.size()) {
+            cpersist::internal::ErrorManager::get().throwError("file " + filename + extension +
+                                                               " is incorrectly formatted");
+        }
+        int version;
+        std::memcpy(&version, data.data() + position, sizeof(version));
+        position += sizeof(version);
+
         // ===== NAME
         // check bounds
         if (position + sizeof(uint8_t) > data.size()) {
@@ -156,7 +165,7 @@ std::vector<Field> File::parseFile() {
         std::vector<uint8_t> fieldData(data.begin() + position, data.begin() + position + dataSize);
 
         // construct and store the field. we'll use emplace to avoid making a temporary Field object
-        fields.emplace_back(currentName, fieldData);
+        fields.emplace_back(currentName, fieldData, version);
 
         // Move to the next field
         position += dataSize;

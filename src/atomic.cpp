@@ -31,6 +31,13 @@ bool File::atomicReplace() {
     std::vector<uint8_t> bytes;
 
     for (const auto& field : fields) {
+        // == FIELD VERSION ==
+        const uint32_t field_version = field.version;
+        bytes.push_back(static_cast<uint8_t>(field_version & 0xFF));
+        bytes.push_back(static_cast<uint8_t>((field_version >> 8) & 0xFF));
+        bytes.push_back(static_cast<uint8_t>((field_version >> 16) & 0xFF));
+        bytes.push_back(static_cast<uint8_t>((field_version >> 24) & 0xFF));
+
         // == NAME LENGTH ==
         if (field.name.size() > UINT8_MAX)
             return false;

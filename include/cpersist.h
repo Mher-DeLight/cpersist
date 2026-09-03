@@ -91,18 +91,31 @@ protected:
     File& owner;
 
 public:
+    virtual void set_version(int version_) = 0;
     Archive(std::string parent, File& owner_) : parent(std::move(parent)), owner(owner_) {}
 };
 class WriteArchive : public Archive {
 public:
     using Archive::Archive;
 
+    void set_version(int version_) override {}
     template <typename T> void operator()(const std::string& key, T& value);
 };
 class ReadArchive : public Archive {
 public:
     using Archive::Archive;
 
+    void set_version(int version_) override {}
+    template <typename T> void operator()(const std::string& key, T& value);
+};
+class VersionArchive : public Archive {
+public:
+    using Archive::Archive;
+    int version = 0;
+
+    void set_version(int version_) override {
+        version = version_;
+    }
     template <typename T> void operator()(const std::string& key, T& value);
 };
 
@@ -125,9 +138,12 @@ class Field {
 public:
     Field(const std::string& fieldname, std::vector<uint8_t>& fieldvalue)
         : name(fieldname), value(fieldvalue) {}
+    Field(const std::string& fieldname, std::vector<uint8_t>& fieldvalue, int fieldversion)
+        : name(fieldname), value(fieldvalue), version(fieldversion) {}
 
     std::string name;
     std::vector<uint8_t> value;
+    int version = 0;
 };
 class File {
 private:
@@ -146,6 +162,7 @@ private:
     bool isDiskFileEncrypted();
     int getDiskFileVersion();
     std::vector<byte> readFileAsBinary();
+    void migrate();
 
 public:
     const std::string filename;
@@ -288,6 +305,9 @@ public:
         if constexpr (cpersist::hasArchive<T>) {
             T object;
 
+            VersionArchive ar(fullname, *this);
+            object.archive(ar);
+
             ReadArchive ar(fullname, *this);
             object.archive(ar);
             return object;
@@ -397,6 +417,9 @@ template <typename T> void WriteArchive::operator()(const std::string& key, T& v
 }
 template <typename T> void ReadArchive::operator()(const std::string& key, T& value) {
     value = owner.read<T>(key, std::nullopt, parent);
+}
+template <typename T> void VersionArchive::operator()(const std::string& key, T& value) {
+    // put here for consistency
 }
 
 template <typename T> internal::WriteProxy& internal::WriteProxy::operator=(const T& value) {
