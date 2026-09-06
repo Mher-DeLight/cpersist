@@ -446,3 +446,17 @@ TEST(Cpersist, StashConversionWorks) {
     cpersist::FreeStash<std::string>("stashconv_stash");
     cpersist::FreeStash<std::string>("stashconv2_stash");
 }
+TEST(Cpersist, FileSystemPathWorks) {
+    namespace fs = std::filesystem;
+    auto file = cpersist::File("path_works");
+    fs::path original_path = "/tmp/test_cpersist_path";
+    file.write("my_path", original_path);
+    file.commit();
+    
+    file.refresh();
+    EXPECT_TRUE(file.contains("my_path"));
+    fs::path read_path = file.read<fs::path>("my_path");
+    EXPECT_EQ(read_path, original_path);
+    
+    fs::remove("savedata/path_works.bin");
+}

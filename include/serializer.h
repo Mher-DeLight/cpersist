@@ -10,6 +10,7 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <filesystem>
 
 namespace cpersist {
 template <typename T, typename Enable = void> struct Serializer;
@@ -161,6 +162,25 @@ template <typename T> struct Serializer<std::vector<T>> {
                 Serializer<T>::read(is, element);
             }
         }
+    }
+};
+
+// ===== STD::FILESYSTEM::PATH =====
+template <> struct Serializer<std::filesystem::path> {
+    static void write(std::ostream& os, const std::filesystem::path& value) {
+        std::string str = value.string();
+        uint32_t size = static_cast<uint32_t>(str.size());
+        os.write(reinterpret_cast<const char*>(&size), sizeof(size));
+        os.write(str.data(), size);
+    }
+
+    static void read(std::istream& is, std::filesystem::path& value) {
+        uint32_t size;
+        is.read(reinterpret_cast<char*>(&size), sizeof(size));
+        std::string str;
+        str.resize(size);
+        is.read(&str[0], size);
+        value = str;
     }
 };
 } // namespace cpersist

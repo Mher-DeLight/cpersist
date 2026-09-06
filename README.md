@@ -57,6 +57,7 @@ The library currently supports the serialization of:
 - `std::unordered_map`
 - `std::array`
 - `std::pair`
+- `std::filesystem::path`
 - Hopefully more to come
 
 ## Installation
