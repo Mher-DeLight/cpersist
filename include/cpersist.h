@@ -305,11 +305,9 @@ public:
         if constexpr (cpersist::hasArchive<T>) {
             T object;
 
-            VersionArchive ar(fullname, *this);
+                        ReadArchive ar(fullname, *this);
             object.archive(ar);
 
-            ReadArchive ar(fullname, *this);
-            object.archive(ar);
             return object;
         }
 
