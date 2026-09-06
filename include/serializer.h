@@ -5,6 +5,7 @@
 #include <istream>
 #include <map>
 #include <ostream>
+#include <set>
 #include <string>
 #include <type_traits>
 #include <unordered_map>
@@ -110,6 +111,31 @@ struct Serializer<std::unordered_map<Key, Value, Hash, KeyEqual, Allocator>> {
             Serializer<Key>::read(is, key);
             Serializer<Value>::read(is, mappedValue);
             value.emplace(std::move(key), std::move(mappedValue));
+        }
+    }
+};
+
+// ===== STD::SET =====
+template <typename Value, typename Compare, typename Allocator>
+struct Serializer<std::set<Value, Compare, Allocator>> {
+    static void write(std::ostream& os, const std::set<Value, Compare, Allocator>& value) {
+        uint32_t size = static_cast<uint32_t>(value.size());
+        Serializer<uint32_t>::write(os, size);
+
+        for (const auto& element : value) {
+            Serializer<Value>::write(os, element);
+        }
+    }
+
+    static void read(std::istream& is, std::set<Value, Compare, Allocator>& value) {
+        uint32_t size;
+        Serializer<uint32_t>::read(is, size);
+
+        value.clear();
+        for (uint32_t i = 0; i < size; ++i) {
+            Value element;
+            Serializer<Value>::read(is, element);
+            value.emplace(std::move(element));
         }
     }
 };

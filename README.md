@@ -55,6 +55,7 @@ The library currently supports the serialization of:
 - `std::vector`
 - `std::map`
 - `std::unordered_map`
+- `std::set`
 - `std::array`
 - `std::pair`
 - `std::filesystem::path`
