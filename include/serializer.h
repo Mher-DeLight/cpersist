@@ -12,6 +12,7 @@
 #include <utility>
 #include <vector>
 #include <filesystem>
+#include<unordered_set>
 
 namespace cpersist {
 template <typename T, typename Enable = void> struct Serializer;
@@ -128,6 +129,35 @@ struct Serializer<std::set<Value, Compare, Allocator>> {
     }
 
     static void read(std::istream& is, std::set<Value, Compare, Allocator>& value) {
+        uint32_t size;
+        Serializer<uint32_t>::read(is, size);
+
+        value.clear();
+        for (uint32_t i = 0; i < size; ++i) {
+            Value element;
+            Serializer<Value>::read(is, element);
+            value.emplace(std::move(element));
+        }
+    }
+};
+
+
+// ===== STD::UNORDERED_SET =====
+
+template < typename Value, typename Hash, typename KeyEqual, typename Allocator>
+struct Serializer<std::unordered_set< Value, Hash,KeyEqual, Allocator>> {
+    static void write(std::ostream& os,
+                      const std::unordered_set< Value, Hash,KeyEqual, Allocator>& value) {
+        uint32_t size = static_cast<uint32_t>(value.size());
+        Serializer<uint32_t>::write(os, size);
+
+        for (const auto& element : value) {
+            Serializer<Value>::write(os, element);
+        }
+    }
+
+    static void read(std::istream& is,
+                     std::unordered_set< Value, Hash,KeyEqual, Allocator>& value) {
         uint32_t size;
         Serializer<uint32_t>::read(is, size);
 
