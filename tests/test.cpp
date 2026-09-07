@@ -1,6 +1,7 @@
 #include <cpersist.h>
 #include <gtest/gtest.h>
 #include <iostream>
+#include <sstream>
 
 struct templatestruct {
     int number = 0;
@@ -435,6 +436,44 @@ TEST(Cpersist, SetWorks) {
     EXPECT_EQ(file.read<std::set<std::string>>("populated"), populated);
     EXPECT_EQ(file.read<std::set<std::string>>("empty"), empty);
     fs::remove("savedata/set_works.bin");
+}
+TEST(Cpersist, OptionalWorks) {
+    namespace fs = std::filesystem;
+    auto file = cpersist::File("optional_works");
+    const std::optional<int> number = 42;
+    const std::optional<std::string> populated = "saved value";
+    const std::optional<std::string> empty;
+    const std::vector<std::optional<std::string>> nested = {
+        std::optional<std::string>("first"), std::nullopt, std::optional<std::string>("third")};
+
+    file.write("number", number);
+    file.write("populated", populated);
+    file.write("empty", empty);
+    file.write("nested", nested);
+    EXPECT_EQ(file.read<std::optional<int>>("number"), number);
+    EXPECT_EQ(file.read<std::optional<std::string>>("populated"), populated);
+    EXPECT_EQ(file.read<std::optional<std::string>>("empty"), empty);
+    EXPECT_EQ(file.read<std::vector<std::optional<std::string>>>("nested"), nested);
+
+    file.commit();
+    file.refresh();
+
+    EXPECT_EQ(file.read<std::optional<int>>("number"), number);
+    EXPECT_EQ(file.read<std::optional<std::string>>("populated"), populated);
+    EXPECT_EQ(file.read<std::optional<std::string>>("empty"), empty);
+    EXPECT_EQ(file.read<std::vector<std::optional<std::string>>>("nested"), nested);
+    fs::remove("savedata/optional_works.bin");
+}
+TEST(Cpersist, EmptyOptionalClearsExistingValue) {
+    std::stringstream stream(std::ios::in | std::ios::out | std::ios::binary);
+    const std::optional<std::string> empty;
+    cpersist::Serializer<std::optional<std::string>>::write(stream, empty);
+
+    std::optional<std::string> result = "stale value";
+    stream.seekg(0);
+    cpersist::Serializer<std::optional<std::string>>::read(stream, result);
+
+    EXPECT_EQ(result, std::nullopt);
 }
 TEST(Cpersist, PairWorks) {
     auto file = cpersist::File("pair_works");

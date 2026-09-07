@@ -4,6 +4,7 @@
 #include <cstring>
 #include <istream>
 #include <map>
+#include <optional>
 #include <ostream>
 #include <set>
 #include <string>
@@ -17,14 +18,43 @@
 namespace cpersist {
 template <typename T, typename Enable = void> struct Serializer;
 
+namespace detail {
+template <typename T> inline constexpr bool isOptional = false;
+template <typename T> inline constexpr bool isOptional<std::optional<T>> = true;
+} // namespace detail
+
 // ===== GENERIC =====
-template <typename T> struct Serializer<T, std::enable_if_t<std::is_trivially_copyable_v<T>>> {
+template <typename T>
+struct Serializer<T, std::enable_if_t<std::is_trivially_copyable_v<T> && !detail::isOptional<T>>> {
     static void write(std::ostream& os, const T& value) {
         os.write(reinterpret_cast<const char*>(&value), sizeof(T));
     }
 
     static void read(std::istream& is, T& value) {
         is.read(reinterpret_cast<char*>(&value), sizeof(T));
+    }
+};
+
+// ===== STD::OPTIONAL =====
+template <typename T> struct Serializer<std::optional<T>> {
+    static void write(std::ostream& os, const std::optional<T>& value) {
+        const bool hasValue = value.has_value();
+        Serializer<bool>::write(os, hasValue);
+        if (hasValue) {
+            Serializer<T>::write(os, *value);
+        }
+    }
+
+    static void read(std::istream& is, std::optional<T>& value) {
+        bool hasValue = false;
+        Serializer<bool>::read(is, hasValue);
+        if (!hasValue) {
+            value.reset();
+            return;
+        }
+
+        value.emplace();
+        Serializer<T>::read(is, *value);
     }
 };
 
