@@ -90,6 +90,55 @@ find_package(OpenSSL REQUIRED)
 target_link_libraries(your_cmake_target PRIVATE ${CMAKE_SOURCE_DIR}/include/cpersist/src/cpersist.a OpenSSL::SSL OpenSSL::Crypto)
 target_include_directories(your_cmake_target PRIVATE ${CMAKE_SOURCE_DIR}/include/cpersist/include)
 ```
+
+### Windows (MSVC)
+
+The archive attached to releases is Linux-only. For Windows, use the `.zip`
+built with MSVC, and note that OpenSSL must be available separately.
+
+First, install OpenSSL with [vcpkg](https://github.com/microsoft/vcpkg):
+
+```powershell
+git clone https://github.com/microsoft/vcpkg C:\vcpkg
+C:\vcpkg\bootstrap-vcpkg.bat
+C:\vcpkg\vcpkg install openssl:x64-windows
+```
+
+Download the Windows `.zip` from the release and extract it into
+`include/cpersist/` as described above. Then in your CMakeLists.txt:
+
+```cmake
+find_package(OpenSSL REQUIRED)
+
+target_link_libraries(your_cmake_target PRIVATE ${CMAKE_SOURCE_DIR}/include/cpersist/src/cpersist.lib OpenSSL::SSL OpenSSL::Crypto)
+target_include_directories(your_cmake_target PRIVATE ${CMAKE_SOURCE_DIR}/include/cpersist/include)
+```
+
+(The `CMAKE_CXX_STANDARD` settings from the section above still apply.)
+
+Configure with the vcpkg toolchain so that `find_package(OpenSSL)` succeeds:
+
+```powershell
+cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake -DVCPKG_TARGET_TRIPLET=x64-windows
+```
+
+Three things to be aware of on Windows:
+
+- `aes.h` includes `<openssl/evp.h>`, so OpenSSL headers must be on the
+  include path of any project using cpersist, not just at link time.
+- vcpkg builds OpenSSL as shared libraries by default, so the following
+  DLLs must sit next to your executable. They can be found in
+  `C:\vcpkg\installed\x64-windows\bin`:
+  - `libcrypto-3-x64.dll`
+  - `libssl-3-x64.dll`
+  - `legacy.dll`
+- `legacy.dll` is OpenSSL 3's legacy provider. It is required at runtime;
+  without it the program fails to start.
+
+The prebuilt binary is compiled with MSVC 19.44 (VS 2022), x64, Release,
+dynamic runtime (`/MD`). Linking it from a project built with a different
+runtime, or with MinGW, will not work.
+
 ### Install from Head
 Go to your project directory, and make sure you have `include/`. Then inside that folder, run:
 ```bash
