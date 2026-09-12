@@ -2,23 +2,39 @@
 #include <array>
 #include <cstdint>
 #include <cstring>
+#include <filesystem>
 #include <istream>
 #include <map>
+#include <optional>
 #include <ostream>
 #include <set>
 #include <string>
 #include <type_traits>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
-#include <filesystem>
-#include<unordered_set>
 
 namespace cpersist {
 template <typename T, typename Enable = void> struct Serializer;
 
+namespace detail {
+template <typename T>
+struct RawCopyEligible : std::bool_constant<std::is_trivially_copyable_v<T>> {};
+
+template <typename T> struct RawCopyEligible<std::optional<T>> : std::false_type {};
+
+template <typename T, size_t Size>
+struct RawCopyEligible<std::array<T, Size>> : RawCopyEligible<std::remove_cv_t<T>> {};
+
+template <typename T>
+inline constexpr bool isRawCopyEligible = RawCopyEligible<std::remove_cv_t<T>>::value;
+} // namespace detail
+
 // ===== GENERIC =====
-template <typename T> struct Serializer<T, std::enable_if_t<std::is_trivially_copyable_v<T>>> {
+template <typename T>
+    requires std::is_trivially_copyable_v<T>
+struct Serializer<T> {
     static void write(std::ostream& os, const T& value) {
         os.write(reinterpret_cast<const char*>(&value), sizeof(T));
     }
@@ -42,10 +58,11 @@ template <typename First, typename Second> struct Serializer<std::pair<First, Se
 };
 
 // ===== STD::ARRAY =====
-// Non-trivial T only
-// Trivially-copyable arrays use the generic memcpy specialization
+// Elements with semantic serializers are handled individually.
+// Raw-copy-eligible arrays use the generic memcpy specialization.
 template <typename T, size_t Size>
-struct Serializer<std::array<T, Size>, std::enable_if_t<!std::is_trivially_copyable_v<T>>> {
+    requires(!detail::isRawCopyEligible<T>)
+struct Serializer<std::array<T, Size>> {
     static void write(std::ostream& os, const std::array<T, Size>& value) {
         for (const auto& element : value) {
             Serializer<T>::write(os, element);
@@ -192,7 +209,7 @@ template <typename T> struct Serializer<std::vector<T>> {
         uint32_t size = static_cast<uint32_t>(value.size());
         os.write(reinterpret_cast<const char*>(&size), sizeof(size));
 
-        if constexpr (std::is_trivially_copyable_v<T>) {
+        if constexpr (detail::isRawCopyEligible<T>) {
             if (!value.empty()) {
                 os.write(reinterpret_cast<const char*>(value.data()), size * sizeof(T));
             }
@@ -209,7 +226,7 @@ template <typename T> struct Serializer<std::vector<T>> {
 
         value.resize(size);
 
-        if constexpr (std::is_trivially_copyable_v<T>) {
+        if constexpr (detail::isRawCopyEligible<T>) {
             if (!value.empty()) {
                 is.read(reinterpret_cast<char*>(value.data()), size * sizeof(T));
             }
