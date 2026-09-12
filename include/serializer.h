@@ -2,29 +2,65 @@
 #include <array>
 #include <cstdint>
 #include <cstring>
+#include <filesystem>
 #include <istream>
 #include <map>
+#include <optional>
 #include <ostream>
 #include <set>
+#include <stdexcept>
 #include <string>
 #include <type_traits>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
-#include <filesystem>
-#include<unordered_set>
 
 namespace cpersist {
 template <typename T, typename Enable = void> struct Serializer;
 
 // ===== GENERIC =====
-template <typename T> struct Serializer<T, std::enable_if_t<std::is_trivially_copyable_v<T>>> {
+template <typename T>
+    requires std::is_trivially_copyable_v<T>
+struct Serializer<T> {
     static void write(std::ostream& os, const T& value) {
         os.write(reinterpret_cast<const char*>(&value), sizeof(T));
     }
 
     static void read(std::istream& is, T& value) {
         is.read(reinterpret_cast<char*>(&value), sizeof(T));
+    }
+};
+
+// ===== STD::OPTIONAL =====
+template <typename T> struct Serializer<std::optional<T>> {
+    static void write(std::ostream& os, const std::optional<T>& value) {
+        const uint8_t discriminator = value.has_value() ? 1 : 0;
+        Serializer<uint8_t>::write(os, discriminator);
+        if (discriminator == 1) {
+            Serializer<T>::write(os, *value);
+        }
+    }
+
+    static void read(std::istream& is, std::optional<T>& value) {
+        uint8_t discriminator = 0;
+        Serializer<uint8_t>::read(is, discriminator);
+        if (!is) {
+            throw std::runtime_error("Failed to read std::optional presence discriminator.");
+        }
+        if (discriminator > 1) {
+            is.setstate(std::ios::failbit);
+            throw std::runtime_error("Invalid std::optional presence discriminator.");
+        }
+        if (discriminator == 0) {
+            value.reset();
+            return;
+        }
+
+        if (!value) {
+            value.emplace();
+        }
+        Serializer<T>::read(is, *value);
     }
 };
 

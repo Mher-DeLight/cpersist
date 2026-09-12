@@ -1,6 +1,7 @@
 #include <cpersist.h>
 #include <gtest/gtest.h>
 #include <iostream>
+#include <sstream>
 
 struct templatestruct {
     int number = 0;
@@ -435,6 +436,58 @@ TEST(Cpersist, SetWorks) {
     EXPECT_EQ(file.read<std::set<std::string>>("populated"), populated);
     EXPECT_EQ(file.read<std::set<std::string>>("empty"), empty);
     fs::remove("savedata/set_works.bin");
+}
+TEST(Cpersist, OptionalWorks) {
+    namespace fs = std::filesystem;
+    auto file = cpersist::File("optional_works");
+    const std::optional<int> number = 42;
+    const std::optional<std::string> populated = "saved value";
+    const std::optional<std::string> empty;
+    const std::vector<std::optional<std::string>> nested = {
+        std::optional<std::string>("first"), std::nullopt, std::optional<std::string>("third")};
+
+    file.write("number", number);
+    file.write("populated", populated);
+    file.write("empty", empty);
+    file.write("nested", nested);
+    EXPECT_EQ(file.read<std::optional<int>>("number"), number);
+    EXPECT_EQ(file.read<std::optional<std::string>>("populated"), populated);
+    EXPECT_EQ(file.read<std::optional<std::string>>("empty"), empty);
+    EXPECT_EQ(file.read<std::vector<std::optional<std::string>>>("nested"), nested);
+
+    file.commit();
+    file.refresh();
+
+    EXPECT_EQ(file.read<std::optional<int>>("number"), number);
+    EXPECT_EQ(file.read<std::optional<std::string>>("populated"), populated);
+    EXPECT_EQ(file.read<std::optional<std::string>>("empty"), empty);
+    EXPECT_EQ(file.read<std::vector<std::optional<std::string>>>("nested"), nested);
+    fs::remove("savedata/optional_works.bin");
+}
+TEST(Cpersist, OptionalDiscriminatorWorks) {
+    std::stringstream stream(std::ios::in | std::ios::out | std::ios::binary);
+    const std::optional<int> present = 42;
+    const std::optional<int> empty;
+    cpersist::Serializer<std::optional<int>>::write(stream, present);
+    cpersist::Serializer<std::optional<int>>::write(stream, empty);
+    EXPECT_EQ(stream.str().size(), 2 * sizeof(uint8_t) + sizeof(int));
+    EXPECT_EQ(static_cast<uint8_t>(stream.str().front()), uint8_t{1});
+    EXPECT_EQ(static_cast<uint8_t>(stream.str().back()), uint8_t{0});
+
+    std::optional<int> result;
+    cpersist::Serializer<std::optional<int>>::read(stream, result);
+    EXPECT_EQ(result, present);
+    cpersist::Serializer<std::optional<int>>::read(stream, result);
+    EXPECT_EQ(result, std::nullopt);
+
+    for (const auto& bytes : {std::string{}, std::string(1, '\2')}) {
+        std::stringstream invalid(bytes, std::ios::in | std::ios::binary);
+        result = 7;
+        EXPECT_THROW(cpersist::Serializer<std::optional<int>>::read(invalid, result),
+                     std::runtime_error);
+        EXPECT_TRUE(invalid.fail());
+        EXPECT_EQ(result, 7);
+    }
 }
 TEST(Cpersist, PairWorks) {
     auto file = cpersist::File("pair_works");
