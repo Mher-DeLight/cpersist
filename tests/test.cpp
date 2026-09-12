@@ -1,6 +1,7 @@
 #include <cpersist.h>
 #include <gtest/gtest.h>
 #include <iostream>
+#include <sstream>
 
 struct templatestruct {
     int number = 0;
@@ -11,6 +12,53 @@ struct templatestruct {
         ar("number", number);
     }
 };
+
+// A trivial type with an explicit one-byte serialization format.
+struct SemanticNumber {
+    int value = 0;
+    bool operator==(const SemanticNumber&) const = default;
+};
+namespace cpersist {
+template <> struct detail::RawCopyEligible<SemanticNumber> : std::false_type {};
+template <> struct Serializer<SemanticNumber> {
+    static void write(std::ostream& os, const SemanticNumber& value) {
+        Serializer<uint8_t>::write(os, static_cast<uint8_t>(value.value));
+    }
+    static void read(std::istream& is, SemanticNumber& value) {
+        uint8_t encoded = 0;
+        Serializer<uint8_t>::read(is, encoded);
+        value.value = encoded;
+    }
+};
+} // namespace cpersist
+
+TEST(Cpersist, ContainersRespectRawCopyEligibility) {
+    static_assert(cpersist::detail::isRawCopyEligible<int>);
+    static_assert(cpersist::detail::isRawCopyEligible<std::array<int, 3>>);
+    static_assert(std::is_trivially_copyable_v<SemanticNumber>);
+    static_assert(!cpersist::detail::isRawCopyEligible<SemanticNumber>);
+    static_assert(!cpersist::detail::isRawCopyEligible<std::optional<int>>);
+    static_assert(!cpersist::detail::isRawCopyEligible<std::array<const SemanticNumber, 3>>);
+
+    auto check = [](const auto& values, const std::string& expected) {
+        using Values = std::decay_t<decltype(values)>;
+        std::stringstream stream(std::ios::in | std::ios::out | std::ios::binary);
+        cpersist::Serializer<Values>::write(stream, values);
+        EXPECT_EQ(stream.str(), expected);
+        Values result;
+        cpersist::Serializer<Values>::read(stream, result);
+        EXPECT_EQ(result, values);
+    };
+
+    const std::string encoded = "\1\2\3";
+    std::stringstream prefix(std::ios::in | std::ios::out | std::ios::binary);
+    cpersist::Serializer<uint32_t>::write(prefix, uint32_t{3});
+    check(std::vector<SemanticNumber>{{1}, {2}, {3}}, prefix.str() + encoded);
+    check(std::array<SemanticNumber, 3>{{{1}, {2}, {3}}}, encoded);
+    check(std::array<std::array<SemanticNumber, 1>, 3>{{{{{1}}}, {{{2}}}, {{{3}}}}}, encoded);
+    check(std::vector<std::array<SemanticNumber, 1>>{{{{1}}}, {{{2}}}, {{{3}}}},
+          prefix.str() + encoded);
+}
 
 TEST(Cpersist, FileBufferWorks) {
     auto file = cpersist::File("myfile");
