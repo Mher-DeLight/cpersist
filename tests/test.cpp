@@ -493,6 +493,56 @@ TEST(Cpersist, EmptyOptionalClearsExistingValue) {
 
     EXPECT_EQ(result, std::nullopt);
 }
+TEST(Cpersist, TruncatedOptionalDiscriminatorDoesNotMutateDestination) {
+    std::stringstream stream(std::ios::in | std::ios::out | std::ios::binary);
+    std::optional<std::string> result = "stale value";
+
+    EXPECT_THROW(cpersist::Serializer<decltype(result)>::read(stream, result), std::runtime_error);
+
+    EXPECT_TRUE(stream.fail());
+    EXPECT_EQ(result, "stale value");
+}
+TEST(Cpersist, InvalidOptionalDiscriminatorDoesNotMutateDestination) {
+    std::pmr::monotonic_buffer_resource targetResource;
+    std::optional<std::pmr::string> result(std::in_place, "stale value", &targetResource);
+    std::stringstream stream(std::ios::in | std::ios::out | std::ios::binary);
+    cpersist::Serializer<uint8_t>::write(stream, uint8_t{2});
+    stream.seekg(0);
+
+    EXPECT_THROW(cpersist::Serializer<decltype(result)>::read(stream, result), std::runtime_error);
+
+    EXPECT_TRUE(stream.fail());
+    EXPECT_EQ(*result, "stale value");
+    EXPECT_EQ(result->get_allocator().resource(), &targetResource);
+}
+TEST(Cpersist, NestedOptionalRejectsInvalidDiscriminator) {
+    std::stringstream stream(std::ios::in | std::ios::out | std::ios::binary);
+    cpersist::Serializer<uint32_t>::write(stream, uint32_t{1});
+    cpersist::Serializer<uint8_t>::write(stream, uint8_t{2});
+    stream.seekg(0);
+
+    std::vector<std::optional<int>> result;
+    EXPECT_THROW(cpersist::Serializer<decltype(result)>::read(stream, result), std::runtime_error);
+    EXPECT_TRUE(stream.fail());
+}
+TEST(Cpersist, OptionalReadsExistingBooleanDiscriminatorFormat) {
+    std::stringstream presentStream(std::ios::in | std::ios::out | std::ios::binary);
+    cpersist::Serializer<bool>::write(presentStream, true);
+    cpersist::Serializer<int>::write(presentStream, 42);
+    presentStream.seekg(0);
+
+    std::optional<int> presentResult;
+    cpersist::Serializer<decltype(presentResult)>::read(presentStream, presentResult);
+    EXPECT_EQ(presentResult, 42);
+
+    std::stringstream emptyStream(std::ios::in | std::ios::out | std::ios::binary);
+    cpersist::Serializer<bool>::write(emptyStream, false);
+    emptyStream.seekg(0);
+
+    std::optional<int> emptyResult = 7;
+    cpersist::Serializer<decltype(emptyResult)>::read(emptyStream, emptyResult);
+    EXPECT_EQ(emptyResult, std::nullopt);
+}
 TEST(Cpersist, TrivialOptionalsUseSemanticFormatWhenNested) {
     static_assert(std::is_trivially_copyable_v<std::optional<int>>);
     static_assert(!cpersist::detail::isRawCopyEligible<std::optional<int>>);
@@ -501,7 +551,8 @@ TEST(Cpersist, TrivialOptionalsUseSemanticFormatWhenNested) {
     const std::vector<std::optional<int>> vectorValues = {7, std::nullopt, -4};
     std::stringstream elementStream(std::ios::in | std::ios::out | std::ios::binary);
     cpersist::Serializer<std::optional<int>>::write(elementStream, vectorValues.front());
-    EXPECT_EQ(elementStream.str().size(), sizeof(bool) + sizeof(int));
+    EXPECT_EQ(elementStream.str().size(), sizeof(uint8_t) + sizeof(int));
+    EXPECT_EQ(static_cast<uint8_t>(elementStream.str().front()), uint8_t{1});
 
     std::stringstream vectorStream(std::ios::in | std::ios::out | std::ios::binary);
     cpersist::Serializer<std::vector<std::optional<int>>>::write(vectorStream, vectorValues);

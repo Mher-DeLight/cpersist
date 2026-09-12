@@ -7,6 +7,7 @@
 #include <optional>
 #include <ostream>
 #include <set>
+#include <stdexcept>
 #include <string>
 #include <type_traits>
 #include <unordered_map>
@@ -45,17 +46,24 @@ template <typename T> struct Serializer<T, std::enable_if_t<detail::isRawCopyEli
 // ===== STD::OPTIONAL =====
 template <typename T> struct Serializer<std::optional<T>> {
     static void write(std::ostream& os, const std::optional<T>& value) {
-        const bool hasValue = value.has_value();
-        Serializer<bool>::write(os, hasValue);
-        if (hasValue) {
+        const uint8_t discriminator = value.has_value() ? 1 : 0;
+        Serializer<uint8_t>::write(os, discriminator);
+        if (discriminator == 1) {
             Serializer<T>::write(os, *value);
         }
     }
 
     static void read(std::istream& is, std::optional<T>& value) {
-        bool hasValue = false;
-        Serializer<bool>::read(is, hasValue);
-        if (!hasValue) {
+        uint8_t discriminator = 0;
+        Serializer<uint8_t>::read(is, discriminator);
+        if (!is) {
+            throw std::runtime_error("Failed to read std::optional presence discriminator.");
+        }
+        if (discriminator > 1) {
+            is.setstate(std::ios::failbit);
+            throw std::runtime_error("Invalid std::optional presence discriminator.");
+        }
+        if (discriminator == 0) {
             value.reset();
             return;
         }
