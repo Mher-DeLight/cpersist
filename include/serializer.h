@@ -227,15 +227,8 @@ template <typename T> struct Serializer<std::list<T>> {
     static void write(std::ostream& os, const std::list<T>& value) {
         uint32_t size = static_cast<uint32_t>(value.size());
         os.write(reinterpret_cast<const char*>(&size), sizeof(size));
-
-        if constexpr (std::is_trivially_copyable_v<T>) {
-            for (const auto& element : value) {
-                os.write(reinterpret_cast<const char*>(&element), sizeof(T));
-            }
-        } else {
-            for (const auto& element : value) {
-                Serializer<T>::write(os, element);
-            }
+        for (const auto& element : value) {
+            Serializer<T>::write(os, element);
         }
     }
 
@@ -245,14 +238,8 @@ template <typename T> struct Serializer<std::list<T>> {
 
         value.resize(size);
 
-        if constexpr (std::is_trivially_copyable_v<T>) {
-            for (auto& element : value) {
-                is.read(reinterpret_cast<char*>(&element), sizeof(T));
-            }
-        } else {
-            for (auto& element : value) {
-                Serializer<T>::read(is, element);
-            }
+        for (auto& element : value) {
+            Serializer<T>::read(is, element);
         }
     }
 };
