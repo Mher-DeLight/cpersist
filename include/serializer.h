@@ -15,6 +15,9 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
+#include <filesystem>
+#include <list>
+#include<unordered_set>
 
 namespace cpersist {
 template <typename T, typename Enable = void> struct Serializer;
@@ -267,6 +270,28 @@ template <typename T> struct Serializer<std::vector<T>> {
             for (auto& element : value) {
                 Serializer<T>::read(is, element);
             }
+        }
+    }
+};
+
+// ==== STD::LIST ==== (trivial + supported types only)
+template <typename T> struct Serializer<std::list<T>> {
+    static void write(std::ostream& os, const std::list<T>& value) {
+        uint32_t size = static_cast<uint32_t>(value.size());
+        os.write(reinterpret_cast<const char*>(&size), sizeof(size));
+        for (const auto& element : value) {
+            Serializer<T>::write(os, element);
+        }
+    }
+
+    static void read(std::istream& is, std::list<T>& value) {
+        uint32_t size;
+        is.read(reinterpret_cast<char*>(&size), sizeof(size));
+
+        value.resize(size);
+
+        for (auto& element : value) {
+            Serializer<T>::read(is, element);
         }
     }
 };

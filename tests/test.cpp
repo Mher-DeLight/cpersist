@@ -466,6 +466,24 @@ TEST(Cpersist, UnorderedMapWorks) {
     EXPECT_EQ(newresult["key4"], map["key4"]);
     fs::remove("savedata/umap_works.bin");
 }
+TEST(Cpersist, ListWorks) {
+    namespace fs = std::filesystem;
+    auto file = cpersist::File("list_works");
+    const std::list<std::string> populated = {"apple", "banana", "orange"};
+    const std::list<std::string> empty;
+
+    file.write("populated", populated);
+    file.write("empty", empty);
+    EXPECT_EQ(file.read<std::list<std::string>>("populated"), populated);
+    EXPECT_EQ(file.read<std::list<std::string>>("empty"), empty);
+
+    file.commit();
+    file.refresh();
+
+    EXPECT_EQ(file.read<std::list<std::string>>("populated"), populated);
+    EXPECT_EQ(file.read<std::list<std::string>>("empty"), empty);
+    fs::remove("savedata/list_works.bin");
+}
 TEST(Cpersist, SetWorks) {
     namespace fs = std::filesystem;
     auto file = cpersist::File("set_works");
