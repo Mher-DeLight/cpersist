@@ -12,6 +12,7 @@
 #include <utility>
 #include <vector>
 #include <filesystem>
+#include <list>
 #include<unordered_set>
 
 namespace cpersist {
@@ -212,6 +213,41 @@ template <typename T> struct Serializer<std::vector<T>> {
         if constexpr (std::is_trivially_copyable_v<T>) {
             if (!value.empty()) {
                 is.read(reinterpret_cast<char*>(value.data()), size * sizeof(T));
+            }
+        } else {
+            for (auto& element : value) {
+                Serializer<T>::read(is, element);
+            }
+        }
+    }
+};
+
+// ==== STD::LIST ==== (trivial + supported types only)
+template <typename T> struct Serializer<std::list<T>> {
+    static void write(std::ostream& os, const std::list<T>& value) {
+        uint32_t size = static_cast<uint32_t>(value.size());
+        os.write(reinterpret_cast<const char*>(&size), sizeof(size));
+
+        if constexpr (std::is_trivially_copyable_v<T>) {
+            for (const auto& element : value) {
+                os.write(reinterpret_cast<const char*>(&element), sizeof(T));
+            }
+        } else {
+            for (const auto& element : value) {
+                Serializer<T>::write(os, element);
+            }
+        }
+    }
+
+    static void read(std::istream& is, std::list<T>& value) {
+        uint32_t size;
+        is.read(reinterpret_cast<char*>(&size), sizeof(size));
+
+        value.resize(size);
+
+        if constexpr (std::is_trivially_copyable_v<T>) {
+            for (auto& element : value) {
+                is.read(reinterpret_cast<char*>(&element), sizeof(T));
             }
         } else {
             for (auto& element : value) {
