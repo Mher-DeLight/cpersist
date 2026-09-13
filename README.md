@@ -58,6 +58,7 @@ The library currently supports the serialization of:
 - `std::set`
 - `std::array`
 - `std::pair`
+- `std::optional`
 - `std::filesystem::path`
 - Hopefully more to come
 

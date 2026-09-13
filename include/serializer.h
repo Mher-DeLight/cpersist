@@ -2,13 +2,17 @@
 #include <array>
 #include <cstdint>
 #include <cstring>
+#include <filesystem>
 #include <istream>
 #include <map>
+#include <optional>
 #include <ostream>
 #include <set>
+#include <stdexcept>
 #include <string>
 #include <type_traits>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 #include <filesystem>
@@ -18,14 +22,61 @@
 namespace cpersist {
 template <typename T, typename Enable = void> struct Serializer;
 
+namespace detail {
+template <typename T>
+struct RawCopyEligible : std::bool_constant<std::is_trivially_copyable_v<T>> {};
+
+template <typename T> struct RawCopyEligible<std::optional<T>> : std::false_type {};
+
+template <typename T, size_t Size>
+struct RawCopyEligible<std::array<T, Size>> : RawCopyEligible<std::remove_cv_t<T>> {};
+
+template <typename T>
+inline constexpr bool isRawCopyEligible = RawCopyEligible<std::remove_cv_t<T>>::value;
+} // namespace detail
+
 // ===== GENERIC =====
-template <typename T> struct Serializer<T, std::enable_if_t<std::is_trivially_copyable_v<T>>> {
+template <typename T>
+    requires std::is_trivially_copyable_v<T>
+struct Serializer<T> {
     static void write(std::ostream& os, const T& value) {
         os.write(reinterpret_cast<const char*>(&value), sizeof(T));
     }
 
     static void read(std::istream& is, T& value) {
         is.read(reinterpret_cast<char*>(&value), sizeof(T));
+    }
+};
+
+// ===== STD::OPTIONAL =====
+template <typename T> struct Serializer<std::optional<T>> {
+    static void write(std::ostream& os, const std::optional<T>& value) {
+        const uint8_t discriminator = value.has_value() ? 1 : 0;
+        Serializer<uint8_t>::write(os, discriminator);
+        if (discriminator == 1) {
+            Serializer<T>::write(os, *value);
+        }
+    }
+
+    static void read(std::istream& is, std::optional<T>& value) {
+        uint8_t discriminator = 0;
+        Serializer<uint8_t>::read(is, discriminator);
+        if (!is) {
+            throw std::runtime_error("Failed to read std::optional presence discriminator.");
+        }
+        if (discriminator > 1) {
+            is.setstate(std::ios::failbit);
+            throw std::runtime_error("Invalid std::optional presence discriminator.");
+        }
+        if (discriminator == 0) {
+            value.reset();
+            return;
+        }
+
+        if (!value) {
+            value.emplace();
+        }
+        Serializer<T>::read(is, *value);
     }
 };
 
@@ -43,10 +94,11 @@ template <typename First, typename Second> struct Serializer<std::pair<First, Se
 };
 
 // ===== STD::ARRAY =====
-// Non-trivial T only
-// Trivially-copyable arrays use the generic memcpy specialization
+// Elements with semantic serializers are handled individually.
+// Raw-copy-eligible arrays use the generic memcpy specialization.
 template <typename T, size_t Size>
-struct Serializer<std::array<T, Size>, std::enable_if_t<!std::is_trivially_copyable_v<T>>> {
+    requires(!detail::isRawCopyEligible<T>)
+struct Serializer<std::array<T, Size>> {
     static void write(std::ostream& os, const std::array<T, Size>& value) {
         for (const auto& element : value) {
             Serializer<T>::write(os, element);
@@ -193,7 +245,7 @@ template <typename T> struct Serializer<std::vector<T>> {
         uint32_t size = static_cast<uint32_t>(value.size());
         os.write(reinterpret_cast<const char*>(&size), sizeof(size));
 
-        if constexpr (std::is_trivially_copyable_v<T>) {
+        if constexpr (detail::isRawCopyEligible<T>) {
             if (!value.empty()) {
                 os.write(reinterpret_cast<const char*>(value.data()), size * sizeof(T));
             }
@@ -210,7 +262,7 @@ template <typename T> struct Serializer<std::vector<T>> {
 
         value.resize(size);
 
-        if constexpr (std::is_trivially_copyable_v<T>) {
+        if constexpr (detail::isRawCopyEligible<T>) {
             if (!value.empty()) {
                 is.read(reinterpret_cast<char*>(value.data()), size * sizeof(T));
             }
