@@ -29,22 +29,22 @@ namespace fs = std::filesystem;
 constexpr char CPERSIST_MAGIC_HEADER[] = "CPERSIST_MAGIC_HEADER";
 inline std::string folderName = "savedata";
 
-inline void setSaveFolder(const std::string& name){
-    if(name.empty()){
-        throw std::invalid_argument("Invalid folder name: folder name cannot be empty.");
+inline void setSaveFolder(const std::string& name) {
+    if (name.empty()) {
+        internal::ErrorManager::get().throwError(
+            "Invalid folder name: folder name cannot be empty.");
     }
-    
-    if(name.find('/') != std::string::npos ||
-       name.find('\\') != std::string::npos ||
-       name.find("..") != std::string::npos ||
-       name.find('.') != std::string::npos){
-            throw std::invalid_argument("Invalid folder name: path traversal characters are not allowed.");
+
+    if (name.find('/') != std::string::npos || name.find('\\') != std::string::npos ||
+        name.find("..") != std::string::npos || name.find('.') != std::string::npos) {
+        internal::ErrorManager::get().throwError(
+            "Invalid folder name: path traversal characters are not allowed.");
     }
-    
+
     folderName = name;
 }
 
-inline std::string getSaveFolder(){
+inline std::string getSaveFolder() {
     return folderName;
 }
 

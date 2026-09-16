@@ -2,6 +2,7 @@
 #include <gtest/gtest.h>
 #include <iostream>
 #include <sstream>
+#include <stdexcept>
 
 struct templatestruct {
     int number = 0;
@@ -598,11 +599,10 @@ TEST(Cpersist, CustomFolderWorks) {
     }
 
     // test input sanitization (path traversal rejection)
-    EXPECT_THROW(cpersist::setSaveFolder("../invalid_path"), std::invalid_argument);
-    EXPECT_THROW(cpersist::setSaveFolder("sub/folder"), std::invalid_argument);
-    EXPECT_THROW(cpersist::setSaveFolder("./invalid_path_2"), std::invalid_argument);
-    EXPECT_THROW(cpersist::setSaveFolder("sub//folder_2"), std::invalid_argument);
-
+    EXPECT_THROW(cpersist::setSaveFolder("../invalid_path"), std::runtime_error);
+    EXPECT_THROW(cpersist::setSaveFolder("sub/folder"), std::runtime_error);
+    EXPECT_THROW(cpersist::setSaveFolder("./invalid_path_2"), std::runtime_error);
+    EXPECT_THROW(cpersist::setSaveFolder("sub//folder_2"), std::runtime_error);
 
     // clean up and restore the suite's test folder
     fs::remove_all("custom_test_folder");
@@ -614,11 +614,11 @@ TEST(Cpersist, FileSystemPathWorks) {
     fs::path original_path = "/tmp/test_cpersist_path";
     file.write("my_path", original_path);
     file.commit();
-    
+
     file.refresh();
     EXPECT_TRUE(file.contains("my_path"));
     fs::path read_path = file.read<fs::path>("my_path");
     EXPECT_EQ(read_path, original_path);
-    
+
     fs::remove("savedata/path_works.bin");
 }
