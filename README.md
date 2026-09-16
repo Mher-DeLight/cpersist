@@ -44,9 +44,29 @@ Or, its equivalent:
 ```cpp
 auto file = cpersist::File("playerdata");
 int high_score = 10;
-file.sync("highscore", highscore);
+file.sync("highscore", high_score);
 file.commit();
 ```
+
+## Save Folder
+
+Files are saved in the `savedata/` folder by default. Use `setSaveFolder` to
+change the folder name before creating or committing files, and
+`getSaveFolder` to read the current setting:
+
+```cpp
+cpersist::setSaveFolder("my_game_data");
+auto file = cpersist::File("playerdata");
+file.write("highscore", 10);
+file.commit();
+
+std::cout << cpersist::getSaveFolder(); // my_game_data
+```
+
+The folder name must be a single relative directory name. Path separators,
+`.` and `..` components are rejected. The directory is created automatically
+when the first file is committed.
+
 ## Serialization
 The library currently supports the serialization of:
 - Trivially serializable types (e.g. `int`, `float`, `bool`, `char`)

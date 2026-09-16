@@ -2,6 +2,7 @@
 #include <gtest/gtest.h>
 #include <iostream>
 #include <sstream>
+#include <stdexcept>
 
 struct templatestruct {
     int number = 0;
@@ -12,6 +13,24 @@ struct templatestruct {
         ar("number", number);
     }
 };
+
+namespace {
+constexpr const char* testFolder = "test_data";
+
+struct TestFolderGuard {
+    TestFolderGuard() {
+        std::filesystem::remove_all(testFolder);
+        cpersist::setSaveFolder(testFolder);
+    }
+
+    ~TestFolderGuard() {
+        std::filesystem::remove_all(testFolder);
+        cpersist::setSaveFolder("savedata");
+    }
+};
+
+TestFolderGuard testFolderGuard;
+} // namespace
 
 // A trivial type with an explicit one-byte serialization format.
 struct SemanticNumber {
@@ -76,7 +95,7 @@ TEST(Cpersist, CommitWorks) {
     file.commit();
 
     EXPECT_TRUE(fs::exists(fs::path(cpersist::folderName) / "commit_works.bin"));
-    fs::remove("savedata/commit_works.bin");
+    fs::remove(fs::path(cpersist::getSaveFolder()) / "commit_works.bin");
 }
 TEST(Cpersist, InitWorks) {
     namespace fs = std::filesystem;
@@ -89,7 +108,7 @@ TEST(Cpersist, InitWorks) {
         auto file = cpersist::File("init_works", "bin");
         EXPECT_EQ(file.read<int>("mynumber"), 5);
     }
-    fs::remove("savedata/init_works.bin");
+    fs::remove(fs::path(cpersist::getSaveFolder()) / "init_works.bin");
 }
 TEST(Cpersist, EncryptionWorks) {
     namespace fs = std::filesystem;
@@ -117,7 +136,7 @@ TEST(Cpersist, EncryptionWorks) {
         EXPECT_ANY_THROW(auto file =
                              cpersist::File("encr_works", "bin", "myincorrectencryptionkey"));
     }
-    fs::remove("savedata/encr_works.bin");
+    fs::remove(fs::path(cpersist::getSaveFolder()) / "encr_works.bin");
 }
 TEST(Cpersist, ContainsWorks) {
     namespace fs = std::filesystem;
@@ -140,7 +159,7 @@ TEST(Cpersist, ContainsWorks) {
         EXPECT_FALSE(file.contains("randomstring"));
         EXPECT_FALSE(file.contains({"foo", "boo"}));
     }
-    fs::remove("savedata/contains_works.bin");
+    fs::remove(fs::path(cpersist::getSaveFolder()) / "contains_works.bin");
 }
 TEST(Cpersist, AutocommitWorks) {
     // not very reliable, since commits may fail, and C++ doesn't usually let destructors throw just
@@ -158,7 +177,7 @@ TEST(Cpersist, AutocommitWorks) {
         EXPECT_TRUE(file.contains("number"));
         EXPECT_TRUE(file.contains({"number", "othernumber"}));
     }
-    fs::remove("savedata/autocommit_works.bin");
+    fs::remove(fs::path(cpersist::getSaveFolder()) / "autocommit_works.bin");
 }
 TEST(Cpersist, EraseWorks) {
     namespace fs = std::filesystem;
@@ -212,7 +231,7 @@ TEST(Cpersist, CopyingWorks) {
 
     EXPECT_EQ(file3.read<int>("mynumber"), 3);
     EXPECT_EQ(file3.read<int>("d"), 6);
-    fs::remove("savedata/copying3.bin");
+    fs::remove(fs::path(cpersist::getSaveFolder()) / "copying3.bin");
 }
 TEST(Cpersist, MergeWorks) {
     namespace fs = std::filesystem;
@@ -301,7 +320,7 @@ TEST(Cpersist, ArchivesWork) {
     file.refresh();
 
     EXPECT_EQ(file.read<templatestruct>("obj").number, 3);
-    fs::remove("savedata/archives_work.bin");
+    fs::remove(fs::path(cpersist::getSaveFolder()) / "archives_work.bin");
 }
 TEST(Cpersist, DiscardWorks) {
     namespace fs = std::filesystem;
@@ -315,7 +334,7 @@ TEST(Cpersist, DiscardWorks) {
 
     EXPECT_EQ(file.read<int>("a"), 5);
     EXPECT_FALSE(file.contains("b"));
-    fs::remove("savedata/discard_works.bin");
+    fs::remove(fs::path(cpersist::getSaveFolder()) / "discard_works.bin");
 }
 TEST(Cpersist, WriteStashWorks) {
     {
@@ -385,7 +404,7 @@ TEST(Cpersist, SchemaVersionsWork) {
         file.commit();
         EXPECT_EQ(file.get_schema_file_version(), 6);
     }
-    fs::remove("savedata/schemaversion_works.bin");
+    fs::remove(fs::path(cpersist::getSaveFolder()) / "schemaversion_works.bin");
 }
 TEST(Cpersist, ClearWorks) {
     namespace fs = std::filesystem;
@@ -408,7 +427,7 @@ TEST(Cpersist, ClearWorks) {
     file.clear();
     file.refresh();
     EXPECT_TRUE(file.contains("a"));
-    fs::remove("savedata/clear_works.bin");
+    fs::remove(fs::path(cpersist::getSaveFolder()) / "clear_works.bin");
 }
 TEST(Cpersist, OperatorBracketWorks) {
     namespace fs = std::filesystem;
@@ -439,7 +458,7 @@ TEST(Cpersist, OperatorBracketWorks) {
     EXPECT_NO_THROW(file["a"]);
     EXPECT_EQ(file["a"].get<int>(), 3);
 
-    fs::remove("savedata/myfile.bin");
+    fs::remove(fs::path(cpersist::getSaveFolder()) / "myfile.bin");
 }
 TEST(Cpersist, UnorderedMapWorks) {
     namespace fs = std::filesystem;
@@ -464,7 +483,7 @@ TEST(Cpersist, UnorderedMapWorks) {
     EXPECT_EQ(newresult["key2"], map["key2"]);
     EXPECT_EQ(newresult["key3"], map["key3"]);
     EXPECT_EQ(newresult["key4"], map["key4"]);
-    fs::remove("savedata/umap_works.bin");
+    fs::remove(fs::path(cpersist::getSaveFolder()) / "umap_works.bin");
 }
 TEST(Cpersist, ListWorks) {
     namespace fs = std::filesystem;
@@ -582,17 +601,42 @@ TEST(Cpersist, StashConversionWorks) {
     cpersist::FreeStash<std::string>("stashconv_stash");
     cpersist::FreeStash<std::string>("stashconv2_stash");
 }
+TEST(Cpersist, CustomFolderWorks) {
+    namespace fs = std::filesystem;
+
+    // test valid custom folder setting and file creation
+    fs::remove_all("custom_test_folder");
+    cpersist::setSaveFolder("custom_test_folder");
+    EXPECT_EQ(cpersist::getSaveFolder(), "custom_test_folder");
+
+    {
+        auto file = cpersist::File("custom_folder_works");
+        file.write("test_val", 42);
+        file.commit();
+        EXPECT_TRUE(fs::exists(fs::path("custom_test_folder") / "custom_folder_works.bin"));
+    }
+
+    // test input sanitization (path traversal rejection)
+    EXPECT_THROW(cpersist::setSaveFolder("../invalid_path"), std::runtime_error);
+    EXPECT_THROW(cpersist::setSaveFolder("sub/folder"), std::runtime_error);
+    EXPECT_THROW(cpersist::setSaveFolder("./invalid_path_2"), std::runtime_error);
+    EXPECT_THROW(cpersist::setSaveFolder("sub//folder_2"), std::runtime_error);
+
+    // clean up and restore the suite's test folder
+    fs::remove_all("custom_test_folder");
+    cpersist::setSaveFolder(testFolder);
+}
 TEST(Cpersist, FileSystemPathWorks) {
     namespace fs = std::filesystem;
     auto file = cpersist::File("path_works");
     fs::path original_path = "/tmp/test_cpersist_path";
     file.write("my_path", original_path);
     file.commit();
-    
+
     file.refresh();
     EXPECT_TRUE(file.contains("my_path"));
     fs::path read_path = file.read<fs::path>("my_path");
     EXPECT_EQ(read_path, original_path);
-    
+
     fs::remove("savedata/path_works.bin");
 }

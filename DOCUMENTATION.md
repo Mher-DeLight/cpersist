@@ -20,7 +20,19 @@ Writes the data `fieldvalue` to the file buffer under the name `fieldname`.
 ```cpp
 cpersist::File.commit()
 ```
-Dumps file buffer into a file with the name `filename.extension` in the `savedata/` folder.
+Dumps file buffer into a file with the name `filename.extension` in the current
+save folder. The default save folder is `savedata/`.
+
+```cpp
+cpersist::setSaveFolder(const std::string& name)
+cpersist::getSaveFolder()
+```
+- `setSaveFolder` changes the folder used by subsequently created or committed files.
+- `getSaveFolder` returns the current folder name.
+
+The folder name must be a single relative directory name. Path separators,
+`.` and `..` components are rejected. The directory is created automatically
+when the first file is committed.
 
 ```cpp
 cpersist::File.read<T>(const std::string& fieldname, std::optional<T> defaultValue)

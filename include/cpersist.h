@@ -27,7 +27,27 @@ using byte = uint8_t;
 namespace fs = std::filesystem;
 
 constexpr char CPERSIST_MAGIC_HEADER[] = "CPERSIST_MAGIC_HEADER";
-constexpr std::string folderName = "savedata";
+inline std::string folderName = "savedata";
+
+inline void setSaveFolder(const std::string& name) {
+    if (name.empty()) {
+        internal::ErrorManager::get().throwError(
+            "Invalid folder name: folder name cannot be empty.");
+    }
+
+    if (name.find('/') != std::string::npos || name.find('\\') != std::string::npos ||
+        name.find("..") != std::string::npos || name.find('.') != std::string::npos) {
+        internal::ErrorManager::get().throwError(
+            "Invalid folder name: path traversal characters are not allowed.");
+    }
+
+    folderName = name;
+}
+
+inline std::string getSaveFolder() {
+    return folderName;
+}
+
 std::vector<uint8_t> generateKeyFromString(const std::string& s);
 
 class File;
