@@ -10,6 +10,7 @@
 #include <set>
 #include <stdexcept>
 #include <string>
+#include <tuple>
 #include <type_traits>
 #include <unordered_map>
 #include <unordered_set>
@@ -27,6 +28,8 @@ template <typename T>
 struct RawCopyEligible : std::bool_constant<std::is_trivially_copyable_v<T>> {};
 
 template <typename T> struct RawCopyEligible<std::optional<T>> : std::false_type {};
+
+template <typename... Types> struct RawCopyEligible<std::tuple<Types...>> : std::false_type {};
 
 template <typename T, size_t Size>
 struct RawCopyEligible<std::array<T, Size>> : RawCopyEligible<std::remove_cv_t<T>> {};
@@ -90,6 +93,20 @@ template <typename First, typename Second> struct Serializer<std::pair<First, Se
     static void read(std::istream& is, std::pair<First, Second>& value) {
         Serializer<First>::read(is, value.first);
         Serializer<Second>::read(is, value.second);
+    }
+};
+
+// ===== STD::TUPLE =====
+template <typename... Types> struct Serializer<std::tuple<Types...>> {
+    static void write(std::ostream& os, const std::tuple<Types...>& value) {
+        std::apply(
+            [&os](const auto&... elements) { (Serializer<Types>::write(os, elements), ...); },
+            value);
+    }
+
+    static void read(std::istream& is, std::tuple<Types...>& value) {
+        std::apply([&is](auto&... elements) { (Serializer<Types>::read(is, elements), ...); },
+                   value);
     }
 };
 
