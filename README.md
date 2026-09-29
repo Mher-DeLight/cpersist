@@ -78,6 +78,7 @@ The library currently supports the serialization of:
 - `std::set`
 - `std::array`
 - `std::pair`
+- `std::tuple` (including empty tuples and nested supported element types)
 - `std::optional`
 - `std::filesystem::path`
 - Hopefully more to come

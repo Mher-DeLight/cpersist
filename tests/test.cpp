@@ -3,6 +3,7 @@
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
+#include <tuple>
 
 struct templatestruct {
     int number = 0;
@@ -588,6 +589,65 @@ TEST(Cpersist, NestedPairWorks) {
 
     auto result = file.read<std::pair<std::string, std::vector<int>>>("pair");
     EXPECT_EQ(result, pair);
+}
+TEST(Cpersist, TupleWorks) {
+    const std::tuple<> empty;
+    const std::tuple<int> single = {42};
+    const std::tuple<int, std::string, bool> mixed = {7, "saved tuple", true};
+    const std::tuple<std::tuple<int, std::string>, std::vector<int>, std::optional<int>> nested = {
+        {9, "nested"}, {1, 2, 3}, 5};
+    const std::vector<std::tuple<int, std::string>> tuples = {{1, "first"}, {2, "second"}};
+
+    {
+        auto file = cpersist::File("tuple_works");
+        file.write("empty", empty);
+        file.write("single", single);
+        file.write("mixed", mixed);
+        file.write("nested", nested);
+        file.write("tuples", tuples);
+        file.commit();
+    }
+
+    auto file = cpersist::File("tuple_works");
+    auto check = [&file](const std::string& name, const auto& expected) {
+        using Value = std::decay_t<decltype(expected)>;
+        EXPECT_TRUE(file.contains(name));
+        EXPECT_EQ(file.read<Value>(name), expected);
+    };
+    check("empty", empty);
+    check("single", single);
+    check("mixed", mixed);
+    check("nested", nested);
+    check("tuples", tuples);
+}
+TEST(Cpersist, TupleSerializationWorks) {
+    auto check = [](const auto& value, const std::string& expected) {
+        using Value = std::decay_t<decltype(value)>;
+        std::stringstream stream(std::ios::in | std::ios::out | std::ios::binary);
+        cpersist::Serializer<Value>::write(stream, value);
+        EXPECT_EQ(stream.str(), expected);
+        Value result{};
+        cpersist::Serializer<Value>::read(stream, result);
+        EXPECT_EQ(result, value);
+        EXPECT_TRUE(stream.good());
+    };
+
+    using Empty = std::tuple<>;
+    check(Empty{}, "");
+    check(std::array<Empty, 2>{}, "");
+    std::stringstream prefix(std::ios::in | std::ios::out | std::ios::binary);
+    cpersist::Serializer<uint32_t>::write(prefix, uint32_t{2});
+    check(std::vector<Empty>(2), prefix.str());
+
+    // Element order and custom formats must survive nesting and container dispatch.
+    using Tuple = std::tuple<SemanticNumber, uint8_t, std::optional<SemanticNumber>,
+                             std::tuple<SemanticNumber, SemanticNumber>>;
+    const Tuple value = {
+        SemanticNumber{1}, 2, SemanticNumber{3}, {SemanticNumber{4}, SemanticNumber{5}}};
+    const std::string encoded = "\1\2\1\3\4\5";
+    check(value, encoded);
+    check(std::array<Tuple, 2>{value, value}, encoded + encoded);
+    check(std::vector<Tuple>{value, value}, prefix.str() + encoded + encoded);
 }
 TEST(Cpersist, StashConversionWorks) {
     std::string& mystring = cpersist::Stash<std::string>("stashconv_stash", "foo");
