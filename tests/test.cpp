@@ -1,6 +1,6 @@
+#include <chrono>
 #include <cpersist.h>
 #include <gtest/gtest.h>
-#include <chrono>
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
@@ -86,16 +86,15 @@ TEST(Cpersist, ContainersRespectRawCopyEligibility) {
 
 TEST(Cpersist, ChronoSerializationWorks) {
     using Thirds = std::chrono::duration<double, std::ratio<1, 3>>;
-    using Timestamp =
-        std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>;
+    using Timestamp = std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>;
 
     const std::chrono::milliseconds zero{0};
     const std::chrono::milliseconds timeout{-2500};
     const Thirds interval{7.5};
     const Timestamp timestamp{std::chrono::milliseconds{-1'725'000'000'123}};
-    const std::vector<std::chrono::milliseconds> history = {
-        std::chrono::milliseconds{0}, std::chrono::milliseconds{-345},
-        std::chrono::milliseconds{6789}};
+    const std::vector<std::chrono::milliseconds> history = {std::chrono::milliseconds{0},
+                                                            std::chrono::milliseconds{-345},
+                                                            std::chrono::milliseconds{6789}};
 
     auto file = cpersist::File("chrono_works");
     file.write("zero", zero);

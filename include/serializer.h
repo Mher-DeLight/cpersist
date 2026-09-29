@@ -5,6 +5,7 @@
 #include <cstring>
 #include <filesystem>
 #include <istream>
+#include <list>
 #include <map>
 #include <optional>
 #include <ostream>
@@ -17,9 +18,6 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
-#include <filesystem>
-#include <list>
-#include<unordered_set>
 
 namespace cpersist {
 template <typename T, typename Enable = void> struct Serializer;
