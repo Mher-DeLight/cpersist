@@ -1,5 +1,6 @@
 #include <cpersist.h>
 #include <gtest/gtest.h>
+#include <chrono>
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
@@ -58,6 +59,9 @@ TEST(Cpersist, ContainersRespectRawCopyEligibility) {
     static_assert(std::is_trivially_copyable_v<SemanticNumber>);
     static_assert(!cpersist::detail::isRawCopyEligible<SemanticNumber>);
     static_assert(!cpersist::detail::isRawCopyEligible<std::optional<int>>);
+    static_assert(!cpersist::detail::isRawCopyEligible<std::chrono::milliseconds>);
+    static_assert(!cpersist::detail::isRawCopyEligible<
+                  std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>>);
     static_assert(!cpersist::detail::isRawCopyEligible<std::array<const SemanticNumber, 3>>);
 
     auto check = [](const auto& values, const std::string& expected) {
@@ -78,6 +82,51 @@ TEST(Cpersist, ContainersRespectRawCopyEligibility) {
     check(std::array<std::array<SemanticNumber, 1>, 3>{{{{{1}}}, {{{2}}}, {{{3}}}}}, encoded);
     check(std::vector<std::array<SemanticNumber, 1>>{{{{1}}}, {{{2}}}, {{{3}}}},
           prefix.str() + encoded);
+}
+
+TEST(Cpersist, ChronoSerializationWorks) {
+    using Thirds = std::chrono::duration<double, std::ratio<1, 3>>;
+    using Timestamp =
+        std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>;
+
+    const std::chrono::milliseconds zero{0};
+    const std::chrono::milliseconds timeout{-2500};
+    const Thirds interval{7.5};
+    const Timestamp timestamp{std::chrono::milliseconds{-1'725'000'000'123}};
+    const std::vector<std::chrono::milliseconds> history = {
+        std::chrono::milliseconds{0}, std::chrono::milliseconds{-345},
+        std::chrono::milliseconds{6789}};
+
+    auto file = cpersist::File("chrono_works");
+    file.write("zero", zero);
+    file.write("timeout", timeout);
+    file.write("interval", interval);
+    file.write("timestamp", timestamp);
+    file.write("history", history);
+    file.commit();
+    file.refresh();
+
+    EXPECT_EQ(file.read<std::chrono::milliseconds>("zero"), zero);
+    EXPECT_EQ(file.read<std::chrono::milliseconds>("timeout"), timeout);
+    EXPECT_EQ(file.read<Thirds>("interval"), interval);
+    EXPECT_EQ(file.read<Timestamp>("timestamp"), timestamp);
+    EXPECT_EQ(file.read<std::vector<std::chrono::milliseconds>>("history"), history);
+
+    using SemanticDuration = std::chrono::duration<SemanticNumber>;
+    const SemanticDuration semantic{SemanticNumber{23}};
+    std::stringstream stream(std::ios::in | std::ios::out | std::ios::binary);
+    cpersist::Serializer<SemanticDuration>::write(stream, semantic);
+    EXPECT_EQ(stream.str(), std::string(1, '\27'));
+    SemanticDuration decoded{};
+    cpersist::Serializer<SemanticDuration>::read(stream, decoded);
+    EXPECT_EQ(decoded.count(), semantic.count());
+
+    std::stringstream truncated(std::string(sizeof(int64_t) - 1, '\1'),
+                                std::ios::in | std::ios::binary);
+    std::chrono::duration<int64_t> unchanged{99};
+    cpersist::Serializer<std::chrono::duration<int64_t>>::read(truncated, unchanged);
+    EXPECT_TRUE(truncated.fail());
+    EXPECT_EQ(unchanged.count(), 99);
 }
 
 TEST(Cpersist, FileBufferWorks) {

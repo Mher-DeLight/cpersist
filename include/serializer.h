@@ -1,5 +1,6 @@
 #pragma once
 #include <array>
+#include <chrono>
 #include <cstdint>
 #include <cstring>
 #include <filesystem>
@@ -31,6 +32,12 @@ template <typename T> struct RawCopyEligible<std::optional<T>> : std::false_type
 
 template <typename... Types> struct RawCopyEligible<std::tuple<Types...>> : std::false_type {};
 
+template <typename Rep, typename Period>
+struct RawCopyEligible<std::chrono::duration<Rep, Period>> : std::false_type {};
+
+template <typename Clock, typename Duration>
+struct RawCopyEligible<std::chrono::time_point<Clock, Duration>> : std::false_type {};
+
 template <typename T, size_t Size>
 struct RawCopyEligible<std::array<T, Size>> : RawCopyEligible<std::remove_cv_t<T>> {};
 
@@ -48,6 +55,36 @@ struct Serializer<T> {
 
     static void read(std::istream& is, T& value) {
         is.read(reinterpret_cast<char*>(&value), sizeof(T));
+    }
+};
+
+// ===== STD::CHRONO =====
+template <typename Rep, typename Period> struct Serializer<std::chrono::duration<Rep, Period>> {
+    static void write(std::ostream& os, const std::chrono::duration<Rep, Period>& value) {
+        Serializer<Rep>::write(os, value.count());
+    }
+
+    static void read(std::istream& is, std::chrono::duration<Rep, Period>& value) {
+        Rep count{};
+        Serializer<Rep>::read(is, count);
+        if (is) {
+            value = std::chrono::duration<Rep, Period>{count};
+        }
+    }
+};
+
+template <typename Clock, typename Duration>
+struct Serializer<std::chrono::time_point<Clock, Duration>> {
+    static void write(std::ostream& os, const std::chrono::time_point<Clock, Duration>& value) {
+        Serializer<Duration>::write(os, value.time_since_epoch());
+    }
+
+    static void read(std::istream& is, std::chrono::time_point<Clock, Duration>& value) {
+        Duration elapsed{};
+        Serializer<Duration>::read(is, elapsed);
+        if (is) {
+            value = std::chrono::time_point<Clock, Duration>{elapsed};
+        }
     }
 };
 

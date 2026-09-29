@@ -80,8 +80,14 @@ The library currently supports the serialization of:
 - `std::pair`
 - `std::tuple` (including empty tuples and nested supported element types)
 - `std::optional`
+- `std::chrono::duration` and `std::chrono::time_point`
 - `std::filesystem::path`
 - Hopefully more to come
+
+Chrono serialization preserves a duration's exact representation count and a
+time point's duration since its clock epoch; it does not convert units or
+clocks. As with the other binary serializers, representation and byte order are
+the host format rather than a portable cross-platform wire format.
 
 ## Installation
 ### Quick Installation
